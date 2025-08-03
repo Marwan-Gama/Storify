@@ -151,7 +151,7 @@ async function startServer() {
       console.log("✅ Database connected successfully");
 
       // Sync database models (create tables if they don't exist)
-      await db.sequelize.sync({ alter: true });
+      await db.sequelize.sync({ force: false });
       console.log("✅ Database models synchronized");
     } else {
       console.log("⚠️  No database host configured, using mock mode");
@@ -166,33 +166,43 @@ async function startServer() {
     });
   } catch (error) {
     console.error("❌ Unable to start server:", error);
-    process.exit(1);
+    throw new Error(`Failed to start server: ${error.message}`);
   }
 }
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
   console.log("SIGTERM received, shutting down gracefully");
-  await db.sequelize.close();
-  process.exit(0);
+  try {
+    await db.sequelize.close();
+    console.log("✅ Database connection closed");
+  } catch (error) {
+    console.error("❌ Error during graceful shutdown:", error);
+  }
+  throw new Error("Server shutdown requested");
 });
 
 process.on("SIGINT", async () => {
   console.log("SIGINT received, shutting down gracefully");
-  await db.sequelize.close();
-  process.exit(0);
+  try {
+    await db.sequelize.close();
+    console.log("✅ Database connection closed");
+  } catch (error) {
+    console.error("❌ Error during graceful shutdown:", error);
+  }
+  throw new Error("Server shutdown requested");
 });
 
 // Handle unhandled promise rejections
-process.on("unhandledRejection", (err) => {
+process.on("unhandledRejection", err => {
   console.error("Unhandled Promise Rejection:", err);
-  process.exit(1);
+  throw new Error(`Unhandled Promise Rejection: ${err.message}`);
 });
 
 // Handle uncaught exceptions
-process.on("uncaughtException", (err) => {
+process.on("uncaughtException", err => {
   console.error("Uncaught Exception:", err);
-  process.exit(1);
+  throw new Error(`Uncaught Exception: ${err.message}`);
 });
 
 // Start the server

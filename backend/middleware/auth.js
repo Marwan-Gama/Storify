@@ -156,6 +156,7 @@ const optionalAuth = async (req, res, next) => {
 
 module.exports = {
   auth,
+  authenticateToken: auth, // Alias for backward compatibility
   adminAuth,
   optionalAuth,
 };

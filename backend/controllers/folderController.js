@@ -2,7 +2,6 @@ const { Folder, File, User } = require("../models");
 const s3Service = require("../services/s3Service");
 const { validationResult } = require("express-validator");
 const { v4: uuidv4 } = require("uuid");
-const path = require("path");
 
 class FolderController {
   // Create a new folder
@@ -62,6 +61,7 @@ class FolderController {
       const folderData = {
         name,
         description: description || null,
+        path: s3FolderKey, // Use S3 key as path
         parentId: parentId || null,
         userId,
         color: color || null,
@@ -208,7 +208,7 @@ class FolderController {
       });
 
       // Build tree structure
-      const folderTree = this.buildFolderTree(folders);
+      const folderTree = FolderController.buildFolderTree(folders);
 
       res.json({
         success: true,
@@ -664,12 +664,12 @@ class FolderController {
   }
 
   // Helper method to build folder tree
-  buildFolderTree(folders, parentId = null) {
+  static buildFolderTree(folders, parentId = null) {
     const tree = [];
 
     for (const folder of folders) {
       if (folder.parentId === parentId) {
-        const children = this.buildFolderTree(folders, folder.id);
+        const children = FolderController.buildFolderTree(folders, folder.id);
         tree.push({
           ...folder.toJSON(),
           children,

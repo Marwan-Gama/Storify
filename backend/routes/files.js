@@ -3,7 +3,7 @@ const router = express.Router();
 const fileController = require("../controllers/fileController");
 const { authenticateToken } = require("../middleware/auth");
 const { uploadSingle, uploadMultiple } = require("../middleware/upload");
-const { body, param, query } = require("express-validator");
+const { body, param } = require("express-validator");
 
 /**
  * @swagger
@@ -260,47 +260,6 @@ router.post(
 
 /**
  * @swagger
- * /api/files/{id}:
- *   get:
- *     summary: Get a specific file
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
- *     responses:
- *       200:
- *         description: File retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   $ref: '#/components/schemas/File'
- *       404:
- *         description: File not found
- */
-router.get(
-  "/:id",
-  authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
-  fileController.getFile
-);
-
-/**
- * @swagger
  * /api/files/{id}/download:
  *   get:
  *     summary: Download a file
@@ -384,6 +343,89 @@ router.get(
       .withMessage("Invalid file ID"),
   ],
   fileController.getFilePreview
+);
+
+/**
+ * @swagger
+ * /api/files/stats:
+ *   get:
+ *     summary: Get file statistics
+ *     tags: [Files]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     stats:
+ *                       type: object
+ *                       properties:
+ *                         totalFiles:
+ *                           type: integer
+ *                         totalSize:
+ *                           type: integer
+ *                         totalDownloads:
+ *                           type: integer
+ *                     fileTypes:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           mimeType:
+ *                             type: string
+ *                           count:
+ *                             type: integer
+ */
+router.get("/stats", authenticateToken, fileController.getFileStats);
+
+/**
+ * @swagger
+ * /api/files/{id}:
+ *   get:
+ *     summary: Get a specific file
+ *     tags: [Files]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     responses:
+ *       200:
+ *         description: File retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/File'
+ *       404:
+ *         description: File not found
+ */
+router.get(
+  "/:id",
+  authenticateToken,
+  [
+    param("id")
+      .isUUID()
+      .withMessage("Invalid file ID"),
+  ],
+  fileController.getFile
 );
 
 /**
@@ -557,48 +599,6 @@ router.post(
   ],
   fileController.restoreFile
 );
-
-/**
- * @swagger
- * /api/files/stats:
- *   get:
- *     summary: Get file statistics
- *     tags: [Files]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Statistics retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     stats:
- *                       type: object
- *                       properties:
- *                         totalFiles:
- *                           type: integer
- *                         totalSize:
- *                           type: integer
- *                         totalDownloads:
- *                           type: integer
- *                     fileTypes:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           mimeType:
- *                             type: string
- *                           count:
- *                             type: integer
- */
-router.get("/stats", authenticateToken, fileController.getFileStats);
 
 /**
  * @swagger

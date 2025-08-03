@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const folderController = require("../controllers/folderController");
 const { authenticateToken } = require("../middleware/auth");
-const { body, param, query } = require("express-validator");
+const { body, param } = require("express-validator");
 
 /**
  * @swagger
@@ -211,6 +211,46 @@ router.post(
   ],
   folderController.createFolder
 );
+
+/**
+ * @swagger
+ * /api/folders/stats:
+ *   get:
+ *     summary: Get folder statistics
+ *     tags: [Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Statistics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     stats:
+ *                       type: object
+ *                       properties:
+ *                         totalFolders:
+ *                           type: integer
+ *                     folderSizes:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           folderId:
+ *                             type: string
+ *                           fileCount:
+ *                             type: integer
+ *                           totalSize:
+ *                             type: integer
+ */
+router.get("/stats", authenticateToken, folderController.getFolderStats);
 
 /**
  * @swagger
@@ -427,46 +467,6 @@ router.post(
   ],
   folderController.restoreFolder
 );
-
-/**
- * @swagger
- * /api/folders/stats:
- *   get:
- *     summary: Get folder statistics
- *     tags: [Folders]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Statistics retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     stats:
- *                       type: object
- *                       properties:
- *                         totalFolders:
- *                           type: integer
- *                     folderSizes:
- *                       type: array
- *                       items:
- *                         type: object
- *                         properties:
- *                           folderId:
- *                             type: string
- *                           fileCount:
- *                             type: integer
- *                           totalSize:
- *                             type: integer
- */
-router.get("/stats", authenticateToken, folderController.getFolderStats);
 
 /**
  * @swagger

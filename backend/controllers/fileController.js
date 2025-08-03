@@ -1,8 +1,6 @@
-const { File, User, Folder, Share } = require("../models");
+const { File, User, Folder } = require("../models");
 const s3Service = require("../services/s3Service");
 const {
-  uploadSingle,
-  uploadMultiple,
   generateUniqueFilename,
   validateFileSize,
 } = require("../middleware/upload");
@@ -64,7 +62,6 @@ class FileController {
 
       // Generate unique filename and S3 key
       const uniqueFilename = generateUniqueFilename(req.file.originalname);
-      const s3Key = `users/${userId}/files/${uniqueFilename}`;
 
       // Upload to S3
       const s3Result = await s3Service.uploadFile(
@@ -195,7 +192,6 @@ class FileController {
         try {
           // Generate unique filename and S3 key
           const uniqueFilename = generateUniqueFilename(file.originalname);
-          const s3Key = `users/${userId}/files/${uniqueFilename}`;
 
           // Upload to S3
           const s3Result = await s3Service.uploadFile(
@@ -264,8 +260,8 @@ class FileController {
         success: true,
         message: "Files uploaded successfully",
         data: {
-          uploaded: uploadedFiles.filter((f) => !f.error).length,
-          failed: uploadedFiles.filter((f) => f.error).length,
+          uploaded: uploadedFiles.filter(f => !f.error).length,
+          failed: uploadedFiles.filter(f => f.error).length,
           files: uploadedFiles,
         },
       });
@@ -377,7 +373,7 @@ class FileController {
           {
             model: User,
             as: "user",
-            attributes: ["id", "username", "email"],
+            attributes: ["id", "name", "email"],
           },
         ],
       });
@@ -790,7 +786,7 @@ class FileController {
           {
             model: User,
             as: "user",
-            attributes: ["username"],
+            attributes: ["name"],
           },
         ],
       });
@@ -817,7 +813,7 @@ class FileController {
           size: file.size,
           mimeType: file.mimeType,
           description: file.description,
-          uploadedBy: file.user.username,
+          uploadedBy: file.user.name,
           uploadedAt: file.createdAt,
           downloadCount: file.downloadCount,
         },
