@@ -19,7 +19,6 @@ import {
   Menu as MenuIcon,
   Search as SearchIcon,
   Notifications as NotificationsIcon,
-  MoreVert as MoreVertIcon,
   Person as ProfileIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
@@ -43,7 +42,6 @@ const Header = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
-  const [moreMenuAnchorEl, setMoreMenuAnchorEl] = useState(null);
 
   const currentDrawerWidth = sidebarCollapsed
     ? collapsedDrawerWidth
@@ -135,14 +133,6 @@ const Header = ({
     setNotificationAnchorEl(null);
   };
 
-  const handleMoreMenuOpen = (event) => {
-    setMoreMenuAnchorEl(event.currentTarget);
-  };
-
-  const handleMoreMenuClose = () => {
-    setMoreMenuAnchorEl(null);
-  };
-
   const handleLogout = () => {
     handleMenuClose();
     onLogout?.();
@@ -205,17 +195,6 @@ const Header = ({
             <Badge badgeContent={unreadNotifications} color="error">
               <NotificationsIcon />
             </Badge>
-          </IconButton>
-        </Tooltip>
-
-        {/* More Options */}
-        <Tooltip title="More options">
-          <IconButton
-            color="inherit"
-            onClick={handleMoreMenuOpen}
-            sx={{ mr: 1 }}
-          >
-            <MoreVertIcon />
           </IconButton>
         </Tooltip>
 
@@ -427,45 +406,6 @@ const Header = ({
               ))
             )}
           </Box>
-        </Menu>
-
-        {/* More Options Menu */}
-        <Menu
-          anchorEl={moreMenuAnchorEl}
-          open={Boolean(moreMenuAnchorEl)}
-          onClose={handleMoreMenuClose}
-          PaperProps={{
-            sx: {
-              mt: 1,
-              minWidth: 200,
-              borderRadius: 2,
-              boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
-              border: "1px solid rgba(0,0,0,0.04)",
-            },
-          }}
-        >
-          <MenuItem
-            onClick={() => {
-              onNavigation("/upload");
-              handleMoreMenuClose();
-            }}
-          >
-            <ListItemIcon>
-              <SearchIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Upload Files</ListItemText>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              onNavigation("/create-folder");
-              handleMoreMenuClose();
-            }}
-          >
-            <ListItemIcon>
-              <SettingsIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Create Folder</ListItemText>
-          </MenuItem>
         </Menu>
       </Toolbar>
     </AppBar>

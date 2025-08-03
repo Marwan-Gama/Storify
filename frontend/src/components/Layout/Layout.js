@@ -20,8 +20,6 @@ const Layout = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        console.log("Layout: User from AuthContext:", user); // Debug log
-
         // Use actual user data from AuthContext and enhance it with additional info
         if (user) {
           const enhancedUserData = {
@@ -33,10 +31,8 @@ const Layout = () => {
             // Add any additional user properties
             ...user,
           };
-          console.log("Layout: Enhanced user data:", enhancedUserData); // Debug log
           setUserData(enhancedUserData);
         } else {
-          console.log("Layout: No user data available"); // Debug log
           setUserData(null);
         }
       } catch (error) {

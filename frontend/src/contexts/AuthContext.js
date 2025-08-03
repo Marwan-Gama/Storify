@@ -6,9 +6,9 @@ import api from "../services/api";
 const AuthContext = createContext();
 
 const initialState = {
-  user: null,
+  user: JSON.parse(localStorage.getItem("user")) || null,
   token: localStorage.getItem("token"),
-  isAuthenticated: false,
+  isAuthenticated: !!localStorage.getItem("token"),
   isLoading: true,
 };
 
@@ -72,39 +72,106 @@ export const AuthProvider = ({ children }) => {
 
   // Fetch user profile if token exists
   useQuery(["user", state.token], () => api.get("/api/auth/profile"), {
-    enabled: !!state.token,
-    retry: false,
-    onSuccess: (data) => {
-      console.log("User profile fetched:", data.data); // Debug log
+    enabled: false, // Disabled automatic profile fetch to prevent rate limiting
+    retry: 0, // No retries
+    retryDelay: 1000,
+    onSuccess: (response) => {
+      // Handle different response structures
+      let userData = null;
+      if (response.data?.data?.user) {
+        userData = response.data.data.user;
+      } else if (
+        response.data?.data &&
+        typeof response.data.data === "object" &&
+        response.data.data.id
+      ) {
+        // If the response is the user object directly
+        userData = response.data.data;
+      } else if (response.data?.user) {
+        // If user is at the top level
+        userData = response.data.user;
+      } else {
+        console.error(
+          "User profile fetched - Unexpected response structure:",
+          response
+        );
+        // Set loading to false even if profile fetch fails
+        dispatch({ type: "SET_LOADING", payload: false });
+        return;
+      }
+
+      // Store updated user data in localStorage
+      localStorage.setItem("user", JSON.stringify(userData));
+
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: { user: data.data.user, token: state.token },
+        payload: { user: userData, token: state.token },
       });
     },
     onError: (error) => {
-      console.error("Failed to fetch user profile:", error); // Debug log
-      dispatch({ type: "LOGIN_FAILURE" });
-      localStorage.removeItem("token");
-      delete api.defaults.headers.common["Authorization"];
+      console.error("Failed to fetch user profile:", error);
+
+      // Set loading to false when profile fetch fails
+      dispatch({ type: "SET_LOADING", payload: false });
+
+      // Only logout on 401 errors, not on network or other errors
+      if (error.response?.status === 401) {
+        console.log("Profile fetch failed with 401, logging out user");
+        dispatch({ type: "LOGIN_FAILURE" });
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        delete api.defaults.headers.common["Authorization"];
+      } else {
+        // For other errors (network, server down, etc.), keep the user logged in
+        console.warn(
+          "Profile fetch failed, but keeping user logged in with token"
+        );
+
+        // Try to restore user data from localStorage as fallback
+        const storedUser = localStorage.getItem("user");
+        if (storedUser && state.token) {
+          try {
+            const userData = JSON.parse(storedUser);
+            console.log("Restoring user data from localStorage:", userData);
+            dispatch({
+              type: "LOGIN_SUCCESS",
+              payload: { user: userData, token: state.token },
+            });
+          } catch (parseError) {
+            console.error("Failed to parse stored user data:", parseError);
+            // Keep the current state but ensure loading is false
+            dispatch({ type: "SET_LOADING", payload: false });
+          }
+        } else {
+          // Keep the current state but ensure loading is false
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
+      }
     },
   });
 
   useEffect(() => {
     if (!state.token) {
       dispatch({ type: "SET_LOADING", payload: false });
-    }
-  }, [state.token]);
-
-  // Set loading to false after a timeout if no token exists
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!state.token && state.isLoading) {
+    } else {
+      // If token exists, restore user from localStorage and set loading to false
+      const storedUser = localStorage.getItem("user");
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          dispatch({
+            type: "LOGIN_SUCCESS",
+            payload: { user: userData, token: state.token },
+          });
+        } catch (parseError) {
+          console.error("Failed to parse stored user data:", parseError);
+          dispatch({ type: "SET_LOADING", payload: false });
+        }
+      } else {
         dispatch({ type: "SET_LOADING", payload: false });
       }
-    }, 2000); // 2 second timeout
-
-    return () => clearTimeout(timer);
-  }, [state.token, state.isLoading]);
+    }
+  }, [state.token]);
 
   const login = async (credentials) => {
     try {
@@ -118,9 +185,26 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", token);
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+      // Create a fallback user object in case profile fetch fails
+      const fallbackUser = {
+        id: user.id || "temp-id",
+        name: user.name || credentials.email?.split("@")[0] || "User",
+        email: user.email || credentials.email,
+        role: user.role || "user",
+        tier: user.tier || "free",
+        isEmailVerified: user.isEmailVerified || false,
+        isActive: user.isActive || true,
+        storageUsed: user.storageUsed || 0,
+        createdAt: user.createdAt || new Date(),
+        updatedAt: user.updatedAt || new Date(),
+      };
+
+      // Store user data in localStorage as fallback
+      localStorage.setItem("user", JSON.stringify(fallbackUser));
+
       dispatch({
         type: "LOGIN_SUCCESS",
-        payload: { user, token },
+        payload: { user: fallbackUser, token },
       });
 
       toast.success("Login successful!");
@@ -171,6 +255,7 @@ export const AuthProvider = ({ children }) => {
       console.error("Logout error:", error);
     } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("user");
       delete api.defaults.headers.common["Authorization"];
       dispatch({ type: "LOGOUT" });
       queryClient.clear();
@@ -264,6 +349,43 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      const response = await api.get("/api/auth/profile");
+
+      // Handle different response structures
+      let userData = null;
+      if (response.data?.data?.user) {
+        userData = response.data.data.user;
+      } else if (
+        response.data?.data &&
+        typeof response.data.data === "object" &&
+        response.data.data.id
+      ) {
+        userData = response.data.data;
+      } else if (response.data?.user) {
+        userData = response.data.user;
+      } else {
+        throw new Error("Unexpected response structure");
+      }
+
+      // Store updated user data in localStorage
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      dispatch({
+        type: "UPDATE_USER",
+        payload: userData,
+      });
+
+      toast.success("Profile refreshed successfully!");
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error("Failed to refresh profile:", error);
+      toast.error("Failed to refresh profile. Please try again.");
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     ...state,
     login,
@@ -275,6 +397,7 @@ export const AuthProvider = ({ children }) => {
     resetPassword,
     verifyEmail,
     refreshToken,
+    refreshProfile, // Add manual profile refresh
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Typography, Alert, CircularProgress } from "@mui/material";
 import { useAuth } from "../contexts/AuthContext";
 import FileManager from "../components/FileManager/FileManager";
+import api from "../services/api";
 
 const Files = () => {
   const { user } = useAuth();
@@ -12,92 +13,9 @@ const Files = () => {
   const [searchFilter, setSearchFilter] = useState("all");
   const [searchSort, setSearchSort] = useState("name");
 
-  // Sample data - replace with real API calls
-  const [files, setFiles] = useState([
-    {
-      id: 1,
-      name: "report.pdf",
-      type: "file",
-      size: "2.5 MB",
-      shared: true,
-      isPublic: false,
-    },
-    {
-      id: 2,
-      name: "presentation.pptx",
-      type: "file",
-      size: "15.2 MB",
-      shared: false,
-      isPublic: false,
-    },
-    {
-      id: 3,
-      name: "image.jpg",
-      type: "file",
-      size: "3.1 MB",
-      shared: false,
-      isPublic: true,
-    },
-    {
-      id: 4,
-      name: "document.docx",
-      type: "file",
-      size: "1.8 MB",
-      shared: true,
-      isPublic: false,
-    },
-    {
-      id: 5,
-      name: "spreadsheet.xlsx",
-      type: "file",
-      size: "4.2 MB",
-      shared: false,
-      isPublic: false,
-    },
-  ]);
-
-  const [folders, setFolders] = useState([
-    {
-      id: 1,
-      name: "Documents",
-      type: "folder",
-      size: "12 items",
-      shared: false,
-      isPublic: false,
-    },
-    {
-      id: 2,
-      name: "Pictures",
-      type: "folder",
-      size: "45 items",
-      shared: true,
-      isPublic: false,
-    },
-    {
-      id: 3,
-      name: "Videos",
-      type: "folder",
-      size: "8 items",
-      shared: false,
-      isPublic: false,
-    },
-    {
-      id: 4,
-      name: "Music",
-      type: "folder",
-      size: "23 items",
-      shared: false,
-      isPublic: false,
-    },
-    {
-      id: 5,
-      name: "Projects",
-      type: "folder",
-      size: "7 items",
-      shared: true,
-      isPublic: false,
-    },
-  ]);
+  // Real data state
+  const [files, setFiles] = useState([]);
+  const [folders, setFolders] = useState([]);
 
   useEffect(() => {
     fetchFiles();
@@ -107,11 +25,28 @@ const Files = () => {
     setLoading(true);
     setError(null);
     try {
-      // Replace with actual API calls
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+      // Fetch user's files and folders - using correct API endpoints
+      const [filesResponse, foldersResponse] = await Promise.all([
+        api.get("/api/files"), // Correct endpoint
+        api.get("/api/folders"), // Correct endpoint
+      ]);
+
+      // Set files data - handle the correct response structure
+      const userFiles =
+        filesResponse.data.data?.files || filesResponse.data.data || [];
+      setFiles(userFiles);
+
+      // Set folders data - handle the correct response structure
+      const userFolders =
+        foldersResponse.data.data?.folders || foldersResponse.data.data || [];
+      setFolders(userFolders);
     } catch (err) {
-      setError("Failed to load files");
       console.error("Error fetching files:", err);
+      setError("Failed to load files. Please try again.");
+
+      // Set empty data on error
+      setFiles([]);
+      setFolders([]);
     } finally {
       setLoading(false);
     }
@@ -119,7 +54,7 @@ const Files = () => {
 
   const handleSearch = (query) => {
     setSearchQuery(query);
-    // Implement search logic here
+    // TODO: Implement search API call
   };
 
   const handleViewModeChange = (mode) => {
@@ -128,56 +63,177 @@ const Files = () => {
 
   const handleFilterChange = (filter) => {
     setSearchFilter(filter);
-    // Implement filter logic here
+    // TODO: Implement filter API call
   };
 
   const handleSortChange = (sort) => {
     setSearchSort(sort);
-    // Implement sort logic here
+    // TODO: Implement sort API call
   };
 
   const handleRefresh = () => {
     fetchFiles();
   };
 
-  const handleUpload = () => {
-    // Implement upload logic
-    console.log("Upload files");
+  const handleUpload = async () => {
+    try {
+      // Create a file input element
+      const input = document.createElement("input");
+      input.type = "file";
+      input.multiple = true;
+
+      input.onchange = async (event) => {
+        const files = Array.from(event.target.files);
+
+        for (const file of files) {
+          const formData = new FormData();
+          formData.append("file", file);
+
+          try {
+            await api.post("/api/files/upload", formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round(
+                  (progressEvent.loaded * 100) / progressEvent.total
+                );
+                console.log(
+                  `Upload progress for ${file.name}: ${percentCompleted}%`
+                );
+              },
+            });
+          } catch (error) {
+            console.error(`Failed to upload ${file.name}:`, error);
+            setError(`Failed to upload ${file.name}. Please try again.`);
+          }
+        }
+
+        // Refresh data after upload
+        fetchFiles();
+      };
+
+      input.click();
+    } catch (error) {
+      console.error("Upload error:", error);
+      setError("Failed to upload files. Please try again.");
+    }
   };
 
-  const handleCreateFolder = () => {
-    // Implement create folder logic
-    console.log("Create folder");
+  const handleCreateFolder = async () => {
+    try {
+      const folderName = prompt("Enter folder name:");
+      if (folderName && folderName.trim()) {
+        await api.post("/api/folders", {
+          name: folderName.trim(),
+        });
+
+        // Refresh data after creating folder
+        fetchFiles();
+      }
+    } catch (error) {
+      console.error("Create folder error:", error);
+      setError("Failed to create folder. Please try again.");
+    }
   };
 
-  const handleFileAction = (action, item) => {
-    switch (action) {
-      case "view":
-        console.log("View:", item);
-        break;
-      case "download":
-        console.log("Download:", item);
-        break;
-      case "share":
-        console.log("Share:", item);
-        break;
-      case "rename":
-        console.log("Rename:", item);
-        break;
-      case "copy":
-        console.log("Copy:", item);
-        break;
-      case "move":
-        console.log("Move:", item);
-        break;
-      case "delete":
-        console.log("Delete:", item);
-        break;
-      case "permissions":
-        console.log("Permissions:", item);
-        break;
-      default:
-        break;
+  const handleFileAction = async (action, item) => {
+    try {
+      switch (action) {
+        case "view":
+          // For files, this could open a preview
+          if (item.type === "file") {
+            window.open(`/api/files/${item.id}/preview`, "_blank");
+          } else {
+            // For folders, navigate to folder contents
+            console.log("Navigate to folder:", item.name);
+          }
+          break;
+
+        case "download":
+          if (item.type === "file") {
+            const response = await api.get(`/api/files/${item.id}/download`, {
+              responseType: "blob",
+            });
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download", item.name);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+          }
+          break;
+
+        case "share":
+          // Open share dialog or navigate to share page
+          console.log("Share functionality for:", item.name);
+          break;
+
+        case "rename":
+          const newName = prompt(`Enter new name for ${item.name}:`);
+          if (newName && newName.trim()) {
+            if (item.type === "file") {
+              await api.put(`/api/files/${item.id}`, { name: newName.trim() });
+            } else {
+              await api.put(`/api/folders/${item.id}`, {
+                name: newName.trim(),
+              });
+            }
+            // Refresh data
+            fetchFiles();
+          }
+          break;
+
+        case "copy":
+          const copyName = prompt(`Enter name for copy of ${item.name}:`);
+          if (copyName && copyName.trim()) {
+            if (item.type === "file") {
+              await api.post(`/api/files/${item.id}/copy`, {
+                name: copyName.trim(),
+              });
+            } else {
+              await api.post(`/api/folders/${item.id}/copy`, {
+                name: copyName.trim(),
+              });
+            }
+            // Refresh data
+            fetchFiles();
+          }
+          break;
+
+        case "move":
+          // This would typically open a folder selection dialog
+          console.log("Move functionality for:", item.name);
+          break;
+
+        case "delete":
+          const confirmDelete = window.confirm(
+            `Are you sure you want to delete "${item.name}"?`
+          );
+          if (confirmDelete) {
+            if (item.type === "file") {
+              await api.delete(`/api/files/${item.id}`);
+            } else {
+              await api.delete(`/api/folders/${item.id}`);
+            }
+            // Refresh data
+            fetchFiles();
+          }
+          break;
+
+        case "permissions":
+          // Open permissions dialog
+          console.log("Permissions functionality for:", item.name);
+          break;
+
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error(`Error performing ${action} on ${item.name}:`, error);
+      setError(`Failed to ${action} ${item.name}. Please try again.`);
     }
   };
 

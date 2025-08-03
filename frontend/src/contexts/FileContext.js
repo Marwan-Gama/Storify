@@ -84,9 +84,10 @@ export const FileProvider = ({ children }) => {
 
   // Load files when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      loadFiles();
-    }
+    // Temporarily disabled to prevent duplicate API calls with Dashboard
+    // if (isAuthenticated) {
+    //   loadFiles();
+    // }
   }, [isAuthenticated, loadFiles]);
 
   const loadFolders = async () => {
