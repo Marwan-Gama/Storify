@@ -62,19 +62,30 @@ export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const queryClient = useQueryClient();
 
+  // Initialize Authorization header if token exists
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+  }, []);
+
   // Fetch user profile if token exists
   useQuery(["user", state.token], () => api.get("/api/auth/profile"), {
     enabled: !!state.token,
     retry: false,
     onSuccess: (data) => {
+      console.log("User profile fetched:", data.data); // Debug log
       dispatch({
         type: "LOGIN_SUCCESS",
         payload: { user: data.data.user, token: state.token },
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Failed to fetch user profile:", error); // Debug log
       dispatch({ type: "LOGIN_FAILURE" });
       localStorage.removeItem("token");
+      delete api.defaults.headers.common["Authorization"];
     },
   });
 

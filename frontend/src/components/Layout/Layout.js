@@ -20,23 +20,32 @@ const Layout = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Replace with actual API call
-        const mockUserData = {
-          name: user?.name || "John Doe",
-          email: user?.email || "john@example.com",
-          tier: user?.tier || "free",
-          storageUsed: 2.5 * 1024 * 1024 * 1024, // 2.5 GB
-          storageLimit: 5 * 1024 * 1024 * 1024, // 5 GB
-        };
-        setUserData(mockUserData);
+        console.log("Layout: User from AuthContext:", user); // Debug log
+
+        // Use actual user data from AuthContext and enhance it with additional info
+        if (user) {
+          const enhancedUserData = {
+            name: user.name || user.username || "User",
+            email: user.email || "user@example.com",
+            tier: user.tier || user.role || "free",
+            storageUsed: user.storageUsed || 2.5 * 1024 * 1024 * 1024, // 2.5 GB
+            storageLimit: user.storageLimit || 5 * 1024 * 1024 * 1024, // 5 GB
+            // Add any additional user properties
+            ...user,
+          };
+          console.log("Layout: Enhanced user data:", enhancedUserData); // Debug log
+          setUserData(enhancedUserData);
+        } else {
+          console.log("Layout: No user data available"); // Debug log
+          setUserData(null);
+        }
       } catch (error) {
-        console.error("Error fetching user data:", error);
+        console.error("Error processing user data:", error);
+        setUserData(null);
       }
     };
 
-    if (user) {
-      fetchUserData();
-    }
+    fetchUserData();
   }, [user]);
 
   const handleDrawerToggle = () => {

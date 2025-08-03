@@ -155,37 +155,15 @@ class AuthController {
       }
 
       const { email, password } = req.body;
+      console.log("Login attempt for email:", email); // Debug log
 
-      // Check if database is available
-      if (!process.env.DB_HOST) {
-        console.log("Mock login for:", { email });
-
-        // Generate mock token
-        const token = this.generateToken("mock-user-id");
-
-        return res.status(200).json({
-          success: true,
-          message: "Login successful (mock response)",
-          data: {
-            user: {
-              id: "mock-user-id",
-              name: "Mock User",
-              email,
-              role: "user",
-              tier: "free",
-              isEmailVerified: true,
-              isActive: true,
-              storageUsed: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            token,
-          },
-        });
-      }
-
-      // Find user
+      // Find user by email in database
       const user = await User.findOne({ where: { email } });
+      console.log(
+        "Database user found:",
+        user ? user.toJSON() : "No user found"
+      ); // Debug log
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -224,48 +202,19 @@ class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
+      const userData = user.toJSON();
+      console.log("Returning real user for login:", userData); // Debug log
+
       res.json({
         success: true,
         message: "Login successful",
         data: {
-          user: user.toJSON(),
+          user: userData,
           token,
         },
       });
     } catch (error) {
       console.error("Login error:", error);
-
-      // Check if it's a database connection error
-      if (
-        error.name === "ConnectionError" ||
-        error.code === "ER_BAD_DB_ERROR"
-      ) {
-        console.log("Database not available, using mock response");
-
-        const { email } = req.body;
-        const token = this.generateToken("mock-user-id");
-
-        return res.status(200).json({
-          success: true,
-          message: "Login successful (mock response - database unavailable)",
-          data: {
-            user: {
-              id: "mock-user-id",
-              name: "Mock User",
-              email,
-              role: "user",
-              tier: "free",
-              isEmailVerified: true,
-              isActive: true,
-              storageUsed: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-            token,
-          },
-        });
-      }
-
       res.status(500).json({
         success: false,
         message: "Internal server error",
@@ -429,30 +378,21 @@ class AuthController {
   // Get user profile
   async getProfile(req, res) {
     try {
-      // Check if database is available
-      if (!process.env.DB_HOST) {
-        console.log("Mock profile request for user ID:", req.user?.id);
+      console.log("getProfile called, req.user:", req.user); // Debug log
 
-        return res.json({
-          success: true,
-          data: {
-            user: {
-              id: req.user?.id || "mock-user-id",
-              name: "Mock User",
-              email: "mock@example.com",
-              role: "user",
-              tier: "free",
-              isEmailVerified: true,
-              isActive: true,
-              storageUsed: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          },
+      // Fetch user from database using the user ID from the token
+      const user = await User.findByPk(req.user.id);
+      console.log(
+        "Database user found:",
+        user ? user.toJSON() : "No user found"
+      ); // Debug log
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
         });
       }
-
-      const user = await User.findByPk(req.user.id);
 
       res.json({
         success: true,
@@ -462,33 +402,6 @@ class AuthController {
       });
     } catch (error) {
       console.error("Get profile error:", error);
-
-      // Check if it's a database connection error
-      if (
-        error.name === "ConnectionError" ||
-        error.code === "ER_BAD_DB_ERROR"
-      ) {
-        console.log("Database not available, using mock response");
-
-        return res.json({
-          success: true,
-          data: {
-            user: {
-              id: req.user?.id || "mock-user-id",
-              name: "Mock User",
-              email: "mock@example.com",
-              role: "user",
-              tier: "free",
-              isEmailVerified: true,
-              isActive: true,
-              storageUsed: 0,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          },
-        });
-      }
-
       res.status(500).json({
         success: false,
         message: "Internal server error",

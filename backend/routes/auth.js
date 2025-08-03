@@ -26,6 +26,9 @@ router.get("/test", (req, res) => {
   });
 });
 
+// Profile endpoint - Get current user profile
+router.get("/profile", auth, authController.getProfile);
+
 /**
  * @swagger
  * components:
@@ -296,34 +299,6 @@ router.post(
   ],
   authController.resetPassword
 );
-
-/**
- * @swagger
- * /api/auth/profile:
- *   get:
- *     summary: Get user profile
- *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: User profile retrieved successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success:
- *                   type: boolean
- *                 data:
- *                   type: object
- *                   properties:
- *                     user:
- *                       $ref: '#/components/schemas/User'
- *       401:
- *         description: Unauthorized
- */
-router.get("/profile", auth, authController.getProfile);
 
 /**
  * @swagger

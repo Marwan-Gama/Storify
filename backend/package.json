@@ -8,9 +8,26 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:unit": "jest --testPathPattern=tests/unit",
+    "test:integration": "jest --testPathPattern=tests/integration",
+    "test:e2e": "jest --testPathPattern=tests/e2e",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "db:migrate": "sequelize-cli db:migrate",
     "db:seed": "sequelize-cli db:seed:all",
-    "db:reset": "sequelize-cli db:drop && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed:all"
+    "db:reset": "sequelize-cli db:drop && sequelize-cli db:create && sequelize-cli db:migrate && sequelize-cli db:seed:all",
+    "db:test:setup": "NODE_ENV=test sequelize-cli db:create && NODE_ENV=test sequelize-cli db:migrate",
+    "db:test:teardown": "NODE_ENV=test sequelize-cli db:drop",
+    "seed:user": "node scripts/seedUser.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "security:audit": "npm audit",
+    "security:fix": "npm audit fix",
+    "docs:generate": "swagger-jsdoc -d swaggerDef.js -o swagger.json",
+    "docs:serve": "swagger-ui-serve swagger.json"
   },
   "keywords": [
     "nodejs",
@@ -19,7 +36,9 @@
     "sequelize",
     "aws-s3",
     "jwt",
-    "file-storage"
+    "file-storage",
+    "cloud-storage",
+    "api"
   ],
   "author": "Cloud Storage Team",
   "license": "MIT",
@@ -45,15 +64,92 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",
     "uuid": "^9.0.1",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "sharp": "^0.32.6",
+    "redis": "^4.6.10",
+    "ioredis": "^5.3.2",
+    "express-session": "^1.17.3",
+    "connect-redis": "^7.1.0",
+    "express-fileupload": "^1.4.3",
+    "file-type": "^18.7.0",
+    "mime-types": "^2.1.35",
+    "archiver": "^6.0.1",
+    "unzipper": "^0.10.14"
   },
   "devDependencies": {
     "@types/jest": "^29.5.8",
+    "@types/node": "^20.8.10",
+    "@types/supertest": "^2.0.16",
+    "eslint": "^8.52.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-jest": "^27.4.3",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^5.0.1",
     "jest": "^29.7.0",
     "nodemon": "^3.0.2",
-    "supertest": "^6.3.3"
+    "prettier": "^3.0.3",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.1",
+    "husky": "^8.0.3",
+    "lint-staged": "^14.0.1",
+    "cross-env": "^7.0.3",
+    "faker": "^6.6.6",
+    "mock-aws-s3": "^4.0.2",
+    "nock": "^13.3.0",
+    "sinon": "^17.0.1",
+    "chai": "^4.3.10",
+    "chai-as-promised": "^7.1.1"
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm test"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended",
+      "plugin:node/recommended",
+      "plugin:jest/recommended",
+      "prettier"
+    ],
+    "plugins": [
+      "jest",
+      "node"
+    ],
+    "env": {
+      "node": true,
+      "jest": true,
+      "es2021": true
+    },
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module"
+    },
+    "rules": {
+      "no-console": "warn",
+      "no-unused-vars": "error",
+      "prefer-const": "error",
+      "no-var": "error"
+    }
+  },
+  "prettier": {
+    "semi": true,
+    "trailingComma": "es5",
+    "singleQuote": false,
+    "printWidth": 80,
+    "tabWidth": 2
   }
 }
