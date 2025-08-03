@@ -1,0 +1,87 @@
+# Project-wide exclusions
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary folders
+tmp/
+temp/
+
+# AWS credentials
+.aws/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Backup files
+*.bak
+*.backup
+
+# Local development files
+.local/
+
+# Database files (project-wide)
+*.db
+*.sqlite
+*.sqlite3
+
+# Upload directories (project-wide)
+uploads/
+public/uploads/
+
+# Logs (project-wide)
+logs/
+*.log
+
+# Environment variables (project-wide)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache directories (project-wide)
+.cache/
+.temp/
+
+# Test files (project-wide)
+test-results/
+playwright-report/
+test-results.xml
+
+# Coverage (project-wide)
+coverage/
+*.lcov
+.nyc_output/
+
+# Package manager files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Documentation build
+docs/build/
+docs/.doctrees/
+
+# Deployment files
+deploy/
+deployment/
+
+# Local configuration
+config.local.js
+config.local.json 
