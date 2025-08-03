@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
       path: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING(500),
         allowNull: false,
       },
       parentId: {
@@ -70,9 +70,6 @@ module.exports = (sequelize, DataTypes) => {
       indexes: [
         {
           fields: ["userId", "parentId"],
-        },
-        {
-          fields: ["path"],
         },
         {
           fields: ["publicLink"],

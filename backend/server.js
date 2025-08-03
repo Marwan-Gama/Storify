@@ -145,8 +145,17 @@ app.use(errorHandler);
 // Database connection and server startup
 async function startServer() {
   try {
-    // Skip database connection for now
-    console.log("⚠️  Skipping database connection for development...");
+    // Connect to database
+    if (process.env.DB_HOST) {
+      await db.sequelize.authenticate();
+      console.log("✅ Database connected successfully");
+
+      // Sync database models (create tables if they don't exist)
+      await db.sequelize.sync({ alter: true });
+      console.log("✅ Database models synchronized");
+    } else {
+      console.log("⚠️  No database host configured, using mock mode");
+    }
 
     // Start server
     app.listen(PORT, () => {

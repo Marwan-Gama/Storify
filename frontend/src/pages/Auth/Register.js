@@ -20,23 +20,85 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
 
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // Validation functions
+  const validateName = (name) => {
+    if (!name.trim()) return "Name is required";
+    if (name.length < 2) return "Name must be at least 2 characters";
+    if (name.length > 100) return "Name must be less than 100 characters";
+    if (!/^[a-zA-Z\s]+$/.test(name))
+      return "Name can only contain letters and spaces";
+    return "";
+  };
+
+  const validateEmail = (email) => {
+    if (!email) return "Email is required";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return "Please enter a valid email";
+    if (email.length > 255) return "Email is too long";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    if (password.length < 8) return "Password must be at least 8 characters";
+    if (password.length > 128) return "Password is too long";
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return "Password must contain at least one lowercase letter, one uppercase letter, and one number";
+    }
+    if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(password)) {
+      return "Password contains invalid characters";
+    }
+    return "";
+  };
+
+  const validateConfirmPassword = (confirmPassword) => {
+    if (!confirmPassword) return "Please confirm your password";
+    if (confirmPassword !== formData.password) return "Passwords do not match";
+    return "";
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors({ ...validationErrors, [name]: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    errors.name = validateName(formData.name);
+    errors.email = validateEmail(formData.email);
+    errors.password = validatePassword(formData.password);
+    errors.confirmPassword = validateConfirmPassword(formData.confirmPassword);
+
+    setValidationErrors(errors);
+
+    return !Object.values(errors).some((error) => error);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    if (!validateForm()) {
       setLoading(false);
       return;
     }
 
     try {
-      await register(formData.name, formData.email, formData.password);
+      // Remove confirmPassword from the data sent to backend
+      const { confirmPassword, ...userData } = formData;
+      await register(userData);
       navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -62,7 +124,9 @@ const Register = () => {
         label="Full Name"
         name="name"
         value={formData.name}
-        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        onChange={handleChange}
+        error={!!validationErrors.name}
+        helperText={validationErrors.name}
         required
         margin="normal"
       />
@@ -73,7 +137,9 @@ const Register = () => {
         name="email"
         type="email"
         value={formData.email}
-        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+        onChange={handleChange}
+        error={!!validationErrors.email}
+        helperText={validationErrors.email}
         required
         margin="normal"
       />
@@ -84,7 +150,9 @@ const Register = () => {
         name="password"
         type="password"
         value={formData.password}
-        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+        onChange={handleChange}
+        error={!!validationErrors.password}
+        helperText={validationErrors.password}
         required
         margin="normal"
       />
@@ -95,9 +163,9 @@ const Register = () => {
         name="confirmPassword"
         type="password"
         value={formData.confirmPassword}
-        onChange={(e) =>
-          setFormData({ ...formData, confirmPassword: e.target.value })
-        }
+        onChange={handleChange}
+        error={!!validationErrors.confirmPassword}
+        helperText={validationErrors.confirmPassword}
         required
         margin="normal"
       />

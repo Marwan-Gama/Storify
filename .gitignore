@@ -1,11 +1,39 @@
 # Project-wide exclusions
 
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Production builds
+build/
+dist/
+out/
+.next/
+.nuxt/
+.vuepress/dist/
+storybook-static/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
 # IDE and Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.vscode-test/
 
 # OS generated files
 .DS_Store
@@ -16,9 +44,49 @@
 ehthumbs.db
 Thumbs.db
 
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage and testing
+coverage/
+*.lcov
+.nyc_output/
+test-results/
+playwright-report/
+test-results.xml
+
+# Cache directories
+.cache/
+.temp/
+.parcel-cache/
+.fusebox/
+.npm
+.eslintcache
+
 # Temporary folders
 tmp/
 temp/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Upload directories
+uploads/
+public/uploads/
+storage/
 
 # AWS credentials
 .aws/
@@ -32,47 +100,31 @@ temp/
 *.bak
 *.backup
 
-# Local development files
-.local/
-
-# Database files (project-wide)
-*.db
-*.sqlite
-*.sqlite3
-
-# Upload directories (project-wide)
-uploads/
-public/uploads/
-
-# Logs (project-wide)
-logs/
-*.log
-
-# Environment variables (project-wide)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Cache directories (project-wide)
-.cache/
-.temp/
-
-# Test files (project-wide)
-test-results/
-playwright-report/
-test-results.xml
-
-# Coverage (project-wide)
-coverage/
-*.lcov
-.nyc_output/
-
 # Package manager files
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+.yarn-integrity
+
+# Output of 'npm pack'
+*.tgz
+
+# Serverless directories
+.serverless/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# PM2
+.pm2/
+
+# Local development files
+.local/
+config.local.js
+config.local.json
 
 # Documentation build
 docs/build/
@@ -82,6 +134,36 @@ docs/.doctrees/
 deploy/
 deployment/
 
-# Local configuration
-config.local.js
-config.local.json 
+# Dependency directories
+jspm_packages/
+
+# Optional REPL history
+.node_repl_history
+
+# Sequelize
+config/database.js
+
+# React specific
+# See https://facebook.github.io/create-react-app/docs/deployment for more information.
+
+# production
+/build
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local development files
+.local/
+
+# Cache directories
+.cache/
+.temp/ 

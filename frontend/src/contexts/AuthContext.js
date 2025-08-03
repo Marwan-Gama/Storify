@@ -63,7 +63,7 @@ export const AuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
 
   // Fetch user profile if token exists
-  useQuery(["user", state.token], () => api.get("/auth/profile"), {
+  useQuery(["user", state.token], () => api.get("/api/auth/profile"), {
     enabled: !!state.token,
     retry: false,
     onSuccess: (data) => {
@@ -99,7 +99,9 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: "LOGIN_START" });
 
-      const response = await api.post("/auth/login", credentials);
+      const response = await api.post("/api/auth/login", credentials);
+      console.log("Login response:", response.data); // Debug log
+
       const { user, token } = response.data.data;
 
       localStorage.setItem("token", token);
@@ -113,10 +115,11 @@ export const AuthProvider = ({ children }) => {
       toast.success("Login successful!");
       return { success: true };
     } catch (error) {
+      console.error("Login error:", error); // Debug log
       dispatch({ type: "LOGIN_FAILURE" });
       const message = error.response?.data?.message || "Login failed";
       toast.error(message);
-      return { success: false, error: message };
+      throw new Error(message); // Throw error so the component can catch it
     }
   };
 
@@ -124,7 +127,9 @@ export const AuthProvider = ({ children }) => {
     try {
       dispatch({ type: "LOGIN_START" });
 
-      const response = await api.post("/auth/register", userData);
+      const response = await api.post("/api/auth/register", userData);
+      console.log("Registration response:", response.data); // Debug log
+
       const { user, token } = response.data.data;
 
       localStorage.setItem("token", token);
@@ -140,16 +145,17 @@ export const AuthProvider = ({ children }) => {
       );
       return { success: true };
     } catch (error) {
+      console.error("Registration error:", error); // Debug log
       dispatch({ type: "LOGIN_FAILURE" });
       const message = error.response?.data?.message || "Registration failed";
       toast.error(message);
-      return { success: false, error: message };
+      throw new Error(message); // Throw error so the component can catch it
     }
   };
 
   const logout = async () => {
     try {
-      await api.post("/auth/logout");
+      await api.post("/api/auth/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -163,7 +169,7 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (profileData) => {
     try {
-      const response = await api.put("/auth/profile", profileData);
+      const response = await api.put("/api/auth/profile", profileData);
       const updatedUser = response.data.data.user;
 
       dispatch({
@@ -183,7 +189,7 @@ export const AuthProvider = ({ children }) => {
 
   const changePassword = async (passwordData) => {
     try {
-      await api.post("/auth/change-password", passwordData);
+      await api.post("/api/auth/change-password", passwordData);
       toast.success("Password changed successfully!");
       return { success: true };
     } catch (error) {
@@ -196,7 +202,7 @@ export const AuthProvider = ({ children }) => {
 
   const forgotPassword = async (email) => {
     try {
-      await api.post("/auth/forgot-password", { email });
+      await api.post("/api/auth/forgot-password", { email });
       toast.success("Password reset email sent!");
       return { success: true };
     } catch (error) {
@@ -209,7 +215,7 @@ export const AuthProvider = ({ children }) => {
 
   const resetPassword = async (token, password) => {
     try {
-      await api.post("/auth/reset-password", { token, password });
+      await api.post("/api/auth/reset-password", { token, password });
       toast.success("Password reset successfully!");
       return { success: true };
     } catch (error) {
@@ -222,7 +228,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyEmail = async (token) => {
     try {
-      await api.post(`/auth/verify-email/${token}`);
+      await api.post(`/api/auth/verify-email/${token}`);
       toast.success("Email verified successfully!");
       return { success: true };
     } catch (error) {
@@ -234,7 +240,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await api.post("/auth/refresh-token");
+      const response = await api.post("/api/auth/refresh-token");
       const { token } = response.data.data;
 
       localStorage.setItem("token", token);

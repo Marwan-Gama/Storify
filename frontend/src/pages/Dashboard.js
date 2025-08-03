@@ -1,63 +1,120 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
-  Button,
   Grid,
   Card,
   CardContent,
-  IconButton,
-  TextField,
-  InputAdornment,
-  Chip,
   LinearProgress,
+  Chip,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import {
-  Search as SearchIcon,
-  CloudUpload as UploadIcon,
-  CreateNewFolder as FolderIcon,
-  ViewList as ListIcon,
-  ViewModule as GridIcon,
+  Cloud as CloudIcon,
+  Storage as StorageIcon,
+  TrendingUp as TrendingUpIcon,
+  Folder as FolderIcon,
 } from "@mui/icons-material";
-import { useFiles } from "../contexts/FileContext";
 import { useAuth } from "../contexts/AuthContext";
+import FileManager from "../components/FileManager/FileManager";
 
 const Dashboard = () => {
-  const {
-    files,
-    folders,
-    loading,
-    error,
-    searchQuery,
-    setSearchQuery,
-    viewMode,
-    setViewMode,
-  } = useFiles();
   const { user } = useAuth();
-  const [uploadProgress, setUploadProgress] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState("list");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilter, setSearchFilter] = useState("all");
+  const [searchSort, setSearchSort] = useState("name");
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      // Simulate upload progress
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 100) {
-            clearInterval(interval);
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 200);
-    }
-  };
+  // Sample data - replace with real API calls
+  const [files, setFiles] = useState([
+    {
+      id: 1,
+      name: "report.pdf",
+      type: "file",
+      size: "2.5 MB",
+      shared: true,
+      isPublic: false,
+    },
+    {
+      id: 2,
+      name: "presentation.pptx",
+      type: "file",
+      size: "15.2 MB",
+      shared: false,
+      isPublic: false,
+    },
+    {
+      id: 3,
+      name: "image.jpg",
+      type: "file",
+      size: "3.1 MB",
+      shared: false,
+      isPublic: true,
+    },
+  ]);
 
-  const handleCreateFolder = () => {
-    const folderName = prompt("Enter folder name:");
-    if (folderName) {
-      // TODO: Implement folder creation
-      console.log("Creating folder:", folderName);
+  const [folders, setFolders] = useState([
+    {
+      id: 1,
+      name: "Documents",
+      type: "folder",
+      size: "12 items",
+      shared: false,
+      isPublic: false,
+    },
+    {
+      id: 2,
+      name: "Pictures",
+      type: "folder",
+      size: "45 items",
+      shared: true,
+      isPublic: false,
+    },
+    {
+      id: 3,
+      name: "Videos",
+      type: "folder",
+      size: "8 items",
+      shared: false,
+      isPublic: false,
+    },
+  ]);
+
+  const [stats, setStats] = useState({
+    totalFiles: 156,
+    totalFolders: 23,
+    storageUsed: 2.5 * 1024 * 1024 * 1024, // 2.5 GB
+    storageLimit: 5 * 1024 * 1024 * 1024, // 5 GB
+    recentUploads: 12,
+  });
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Replace with actual API calls
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API delay
+
+      // Mock data - replace with real API responses
+      setStats({
+        totalFiles: 156,
+        totalFolders: 23,
+        storageUsed: 2.5 * 1024 * 1024 * 1024,
+        storageLimit: 5 * 1024 * 1024 * 1024,
+        recentUploads: 12,
+      });
+    } catch (err) {
+      setError("Failed to load dashboard data");
+      console.error("Error fetching dashboard data:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,193 +126,264 @@ const Dashboard = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
   };
 
-  const getFileIcon = (fileType) => {
-    // Simple file type detection
-    if (fileType.includes("image")) return "🖼️";
-    if (fileType.includes("video")) return "🎥";
-    if (fileType.includes("audio")) return "🎵";
-    if (fileType.includes("pdf")) return "📄";
-    if (fileType.includes("document")) return "📝";
-    return "📁";
+  const getStorageUsagePercentage = () => {
+    return Math.round((stats.storageUsed / stats.storageLimit) * 100);
   };
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    // Implement search logic here
+  };
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+  };
+
+  const handleFilterChange = (filter) => {
+    setSearchFilter(filter);
+    // Implement filter logic here
+  };
+
+  const handleSortChange = (sort) => {
+    setSearchSort(sort);
+    // Implement sort logic here
+  };
+
+  const handleRefresh = () => {
+    fetchDashboardData();
+  };
+
+  const handleUpload = () => {
+    // Implement upload logic
+    console.log("Upload files");
+  };
+
+  const handleCreateFolder = () => {
+    // Implement create folder logic
+    console.log("Create folder");
+  };
+
+  const handleFileAction = (action, item) => {
+    switch (action) {
+      case "view":
+        console.log("View:", item);
+        break;
+      case "download":
+        console.log("Download:", item);
+        break;
+      case "share":
+        console.log("Share:", item);
+        break;
+      case "rename":
+        console.log("Rename:", item);
+        break;
+      case "copy":
+        console.log("Copy:", item);
+        break;
+      case "move":
+        console.log("Move:", item);
+        break;
+      case "delete":
+        console.log("Delete:", item);
+        break;
+      case "permissions":
+        console.log("Permissions:", item);
+        break;
+      default:
+        break;
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "50vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
-    <Box>
+    <Box sx={{ width: "100%" }}>
       {/* Header */}
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          Welcome back, {user?.name || "User"}!
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+          {getGreeting()}, {user?.name || "User"}!
         </Typography>
         <Typography variant="body1" color="text.secondary">
-          Manage your files and folders
+          Welcome back to your cloud storage dashboard
         </Typography>
       </Box>
 
       {/* Error Alert */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
-      {/* Upload Progress */}
-      {uploadProgress > 0 && uploadProgress < 100 && (
-        <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" gutterBottom>
-            Uploading file... {uploadProgress}%
-          </Typography>
-          <LinearProgress variant="determinate" value={uploadProgress} />
+      {/* Stats Cards */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <CloudIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6" component="div">
+                  Total Files
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                {stats.totalFiles}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Files in your storage
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <FolderIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6" component="div">
+                  Folders
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                {stats.totalFolders}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Organized folders
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <StorageIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6" component="div">
+                  Storage Used
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                {formatFileSize(stats.storageUsed)}
+              </Typography>
+              <Box sx={{ mb: 1 }}>
+                <LinearProgress
+                  variant="determinate"
+                  value={getStorageUsagePercentage()}
+                  sx={{ height: 8, borderRadius: 4 }}
+                />
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {getStorageUsagePercentage()}% of{" "}
+                {formatFileSize(stats.storageLimit)}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={3}>
+          <Card sx={{ height: "100%" }}>
+            <CardContent>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <TrendingUpIcon color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6" component="div">
+                  Recent Uploads
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
+                {stats.recentUploads}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                This week
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      {/* Quick Actions */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          Quick Actions
+        </Typography>
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Chip
+            label="Upload Files"
+            color="primary"
+            variant="outlined"
+            onClick={handleUpload}
+            sx={{ cursor: "pointer" }}
+          />
+          <Chip
+            label="Create Folder"
+            color="primary"
+            variant="outlined"
+            onClick={handleCreateFolder}
+            sx={{ cursor: "pointer" }}
+          />
+          <Chip
+            label="Shared Files"
+            color="secondary"
+            variant="outlined"
+            onClick={() => console.log("View shared files")}
+            sx={{ cursor: "pointer" }}
+          />
         </Box>
-      )}
-
-      {/* Actions Bar */}
-      <Box
-        sx={{
-          mb: 3,
-          display: "flex",
-          gap: 2,
-          flexWrap: "wrap",
-          alignItems: "center",
-        }}
-      >
-        <Button
-          variant="contained"
-          startIcon={<UploadIcon />}
-          component="label"
-        >
-          Upload File
-          <input type="file" hidden onChange={handleFileUpload} />
-        </Button>
-
-        <Button
-          variant="outlined"
-          startIcon={<FolderIcon />}
-          onClick={handleCreateFolder}
-        >
-          New Folder
-        </Button>
-
-        <Box sx={{ flexGrow: 1 }} />
-
-        <TextField
-          size="small"
-          placeholder="Search files..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ minWidth: 250 }}
-        />
-
-        <IconButton
-          onClick={() => setViewMode(viewMode === "grid" ? "list" : "grid")}
-        >
-          {viewMode === "grid" ? <ListIcon /> : <GridIcon />}
-        </IconButton>
       </Box>
 
-      {/* Content */}
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <LinearProgress sx={{ width: "100%" }} />
-        </Box>
-      ) : (
-        <Grid container spacing={2}>
-          {/* Folders */}
-          {folders.map((folder) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={folder.id}>
-              <Card sx={{ cursor: "pointer", "&:hover": { boxShadow: 4 } }}>
-                <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <Typography variant="h6" sx={{ mr: 1 }}>
-                      📁
-                    </Typography>
-                    <Typography variant="subtitle1" noWrap>
-                      {folder.name}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color="text.secondary">
-                    {folder.itemCount || 0} items
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-
-          {/* Files */}
-          {files.map((file) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={file.id}>
-              <Card sx={{ cursor: "pointer", "&:hover": { boxShadow: 4 } }}>
-                <CardContent>
-                  <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                    <Typography variant="h6" sx={{ mr: 1 }}>
-                      {getFileIcon(file.mimeType)}
-                    </Typography>
-                    <Typography variant="subtitle1" noWrap>
-                      {file.name}
-                    </Typography>
-                  </Box>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    gutterBottom
-                  >
-                    {formatFileSize(file.size)}
-                  </Typography>
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    {file.isShared && (
-                      <Chip label="Shared" size="small" color="primary" />
-                    )}
-                    {file.isPublic && (
-                      <Chip label="Public" size="small" color="secondary" />
-                    )}
-                  </Box>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-
-          {/* Empty State */}
-          {files.length === 0 && folders.length === 0 && (
-            <Grid item xs={12}>
-              <Box
-                sx={{
-                  textAlign: "center",
-                  py: 8,
-                  border: "2px dashed",
-                  borderColor: "grey.300",
-                  borderRadius: 2,
-                }}
-              >
-                <UploadIcon sx={{ fontSize: 64, color: "grey.400", mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No files yet
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
-                  Upload your first file or create a folder to get started
-                </Typography>
-                <Button
-                  variant="contained"
-                  startIcon={<UploadIcon />}
-                  component="label"
-                >
-                  Upload File
-                  <input type="file" hidden onChange={handleFileUpload} />
-                </Button>
-              </Box>
-            </Grid>
-          )}
-        </Grid>
-      )}
+      {/* File Manager */}
+      <Box>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+          My Files
+        </Typography>
+        <FileManager
+          files={files}
+          folders={folders}
+          loading={loading}
+          error={error}
+          onSearch={handleSearch}
+          onViewModeChange={handleViewModeChange}
+          onFilterChange={handleFilterChange}
+          onSortChange={handleSortChange}
+          onRefresh={handleRefresh}
+          onUpload={handleUpload}
+          onCreateFolder={handleCreateFolder}
+          onView={(item) => handleFileAction("view", item)}
+          onDownload={(item) => handleFileAction("download", item)}
+          onShare={(item) => handleFileAction("share", item)}
+          onRename={(item) => handleFileAction("rename", item)}
+          onCopy={(item) => handleFileAction("copy", item)}
+          onMove={(item) => handleFileAction("move", item)}
+          onDelete={(item) => handleFileAction("delete", item)}
+          onPermissions={(item) => handleFileAction("permissions", item)}
+          viewMode={viewMode}
+          searchQuery={searchQuery}
+          searchFilter={searchFilter}
+          searchSort={searchSort}
+          emptyMessage="No files or folders found. Start by uploading some files!"
+        />
+      </Box>
     </Box>
   );
 };

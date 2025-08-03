@@ -27,21 +27,56 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
 
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Validation functions
+  const validateEmail = (email) => {
+    if (!email) return "Email is required";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return "Please enter a valid email";
+    if (email.length > 255) return "Email is too long";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (!password) return "Password is required";
+    if (password.length > 128) return "Password is too long";
+    return "";
+  };
+
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+
+    // Clear validation error for this field
+    if (validationErrors[name]) {
+      setValidationErrors({ ...validationErrors, [name]: "" });
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    errors.email = validateEmail(formData.email);
+    errors.password = validatePassword(formData.password);
+
+    setValidationErrors(errors);
+
+    return !Object.values(errors).some((error) => error);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    }
 
     try {
       await login(formData);
@@ -84,6 +119,8 @@ const Login = () => {
         type="email"
         value={formData.email}
         onChange={handleChange}
+        error={!!validationErrors.email}
+        helperText={validationErrors.email}
         required
         margin="normal"
         InputProps={{
@@ -102,6 +139,8 @@ const Login = () => {
         type={showPassword ? "text" : "password"}
         value={formData.password}
         onChange={handleChange}
+        error={!!validationErrors.password}
+        helperText={validationErrors.password}
         required
         margin="normal"
         InputProps={{

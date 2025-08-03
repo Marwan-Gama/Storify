@@ -13,7 +13,40 @@ const auth = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret =
+      process.env.JWT_SECRET || "fallback-secret-key-for-development";
+    const decoded = jwt.verify(token, secret);
+
+    // Check if database is available
+    if (!process.env.DB_HOST) {
+      req.user = {
+        id: decoded.userId,
+        name: "Mock User",
+        email: "mock@example.com",
+        role: "user",
+        tier: "free",
+        isEmailVerified: true,
+        isActive: true,
+        storageUsed: 0,
+        toJSON: function() {
+          return {
+            id: this.id,
+            name: this.name,
+            email: this.email,
+            role: this.role,
+            tier: this.tier,
+            isEmailVerified: this.isEmailVerified,
+            isActive: this.isActive,
+            storageUsed: this.storageUsed,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+        },
+      };
+      req.token = token;
+      return next();
+    }
+
     const user = await User.findByPk(decoded.userId);
 
     if (!user || !user.isActive) {
@@ -72,7 +105,40 @@ const optionalAuth = async (req, res, next) => {
       req.header("Authorization")?.replace("Bearer ", "") || req.cookies?.token;
 
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const secret =
+        process.env.JWT_SECRET || "fallback-secret-key-for-development";
+      const decoded = jwt.verify(token, secret);
+
+      // Check if database is available
+      if (!process.env.DB_HOST) {
+        req.user = {
+          id: decoded.userId,
+          name: "Mock User",
+          email: "mock@example.com",
+          role: "user",
+          tier: "free",
+          isEmailVerified: true,
+          isActive: true,
+          storageUsed: 0,
+          toJSON: function() {
+            return {
+              id: this.id,
+              name: this.name,
+              email: this.email,
+              role: this.role,
+              tier: this.tier,
+              isEmailVerified: this.isEmailVerified,
+              isActive: this.isActive,
+              storageUsed: this.storageUsed,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            };
+          },
+        };
+        req.token = token;
+        return next();
+      }
+
       const user = await User.findByPk(decoded.userId);
 
       if (user && user.isActive) {

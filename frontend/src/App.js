@@ -9,6 +9,7 @@ import AuthLayout from "./components/Layout/AuthLayout";
 // Pages
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
+import Files from "./pages/Files";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
 import ForgotPassword from "./pages/Auth/ForgotPassword";
@@ -87,6 +88,7 @@ function App() {
         }
       >
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="files" element={<Files />} />
         <Route path="profile" element={<Profile />} />
         <Route path="trash" element={<Trash />} />
         <Route path="shared" element={<Shared />} />

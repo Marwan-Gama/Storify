@@ -5,6 +5,27 @@ const { auth } = require("../middleware/auth");
 
 const router = express.Router();
 
+// Test endpoint
+router.get("/test", (req, res) => {
+  res.json({
+    success: true,
+    message: "Auth routes are working",
+    timestamp: new Date().toISOString(),
+    validationRequirements: {
+      registration: {
+        name: "2-100 characters, letters and spaces only",
+        email: "Valid email format, max 255 characters",
+        password:
+          "8-128 characters, must contain lowercase, uppercase, and number",
+      },
+      login: {
+        email: "Valid email format, max 255 characters",
+        password: "Required, max 128 characters",
+      },
+    },
+  });
+});
+
 /**
  * @swagger
  * components:
@@ -80,14 +101,26 @@ router.post(
     body("name")
       .trim()
       .isLength({ min: 2, max: 100 })
-      .withMessage("Name must be between 2 and 100 characters"),
+      .withMessage("Name must be between 2 and 100 characters")
+      .matches(/^[a-zA-Z\s]+$/)
+      .withMessage("Name can only contain letters and spaces"),
+
     body("email")
       .isEmail()
       .normalizeEmail()
-      .withMessage("Please provide a valid email"),
+      .withMessage("Please provide a valid email")
+      .isLength({ max: 255 })
+      .withMessage("Email is too long"),
+
     body("password")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters long"),
+      .isLength({ min: 8, max: 128 })
+      .withMessage("Password must be between 8 and 128 characters")
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage(
+        "Password must contain at least one lowercase letter, one uppercase letter, and one number"
+      )
+      .matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/)
+      .withMessage("Password contains invalid characters"),
   ],
   authController.register
 );
@@ -132,10 +165,15 @@ router.post(
     body("email")
       .isEmail()
       .normalizeEmail()
-      .withMessage("Please provide a valid email"),
+      .withMessage("Please provide a valid email")
+      .isLength({ max: 255 })
+      .withMessage("Email is too long"),
+
     body("password")
       .notEmpty()
-      .withMessage("Password is required"),
+      .withMessage("Password is required")
+      .isLength({ min: 1, max: 128 })
+      .withMessage("Password is too long"),
   ],
   authController.login
 );
@@ -203,7 +241,9 @@ router.post(
     body("email")
       .isEmail()
       .normalizeEmail()
-      .withMessage("Please provide a valid email"),
+      .withMessage("Please provide a valid email")
+      .isLength({ max: 255 })
+      .withMessage("Email is too long"),
   ],
   authController.forgotPassword
 );
@@ -240,10 +280,19 @@ router.post(
   [
     body("token")
       .notEmpty()
-      .withMessage("Token is required"),
+      .withMessage("Token is required")
+      .isLength({ min: 32, max: 255 })
+      .withMessage("Invalid token format"),
+
     body("password")
-      .isLength({ min: 6 })
-      .withMessage("Password must be at least 6 characters long"),
+      .isLength({ min: 8, max: 128 })
+      .withMessage("Password must be between 8 and 128 characters")
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage(
+        "Password must contain at least one lowercase letter, one uppercase letter, and one number"
+      )
+      .matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/)
+      .withMessage("Password contains invalid characters"),
   ],
   authController.resetPassword
 );
@@ -310,12 +359,17 @@ router.put(
       .optional()
       .trim()
       .isLength({ min: 2, max: 100 })
-      .withMessage("Name must be between 2 and 100 characters"),
+      .withMessage("Name must be between 2 and 100 characters")
+      .matches(/^[a-zA-Z\s]+$/)
+      .withMessage("Name can only contain letters and spaces"),
+
     body("email")
       .optional()
       .isEmail()
       .normalizeEmail()
-      .withMessage("Please provide a valid email"),
+      .withMessage("Please provide a valid email")
+      .isLength({ max: 255 })
+      .withMessage("Email is too long"),
   ],
   authController.updateProfile
 );
@@ -355,10 +409,19 @@ router.post(
     auth,
     body("currentPassword")
       .notEmpty()
-      .withMessage("Current password is required"),
+      .withMessage("Current password is required")
+      .isLength({ min: 1, max: 128 })
+      .withMessage("Current password is too long"),
+
     body("newPassword")
-      .isLength({ min: 6 })
-      .withMessage("New password must be at least 6 characters long"),
+      .isLength({ min: 8, max: 128 })
+      .withMessage("New password must be between 8 and 128 characters")
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage(
+        "New password must contain at least one lowercase letter, one uppercase letter, and one number"
+      )
+      .matches(/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/)
+      .withMessage("New password contains invalid characters"),
   ],
   authController.changePassword
 );

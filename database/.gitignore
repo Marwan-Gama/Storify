@@ -1,0 +1,52 @@
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+*.dump
+*.backup
+*.bak
+
+# Database logs
+*.log
+
+# Database cache
+*.cache
+
+# Database temporary files
+*.tmp
+*.temp
+
+# Database exports
+*.csv
+*.json
+*.xml
+
+# Database credentials
+.env
+*.key
+*.pem
+*.crt
+
+# Database backups
+backups/
+*.backup
+*.bak
+
+# Database dumps
+dumps/
+*.dump
+
+# Database migrations (if using a migration tool)
+migrations/
+*.migration
+
+# Database seeds
+seeds/
+*.seed
+
+# Database test files
+test/
+tests/
+*.test.sql
+*.spec.sql 

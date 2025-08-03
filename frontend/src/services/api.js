@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 
 // Create axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5000",
+  baseURL: process.env.REACT_APP_API_URL || "http://localhost:5001",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
@@ -41,7 +41,8 @@ api.interceptors.response.use(
         const refreshToken = localStorage.getItem("refreshToken");
         if (refreshToken) {
           const response = await axios.post(
-            `${process.env.REACT_APP_API_URL}/auth/refresh-token`,
+            `${process.env.REACT_APP_API_URL ||
+              "http://localhost:5001"}/api/auth/refresh-token`,
             {},
             {
               headers: {
@@ -82,7 +83,7 @@ export const uploadFile = async (file, onProgress) => {
   const formData = new FormData();
   formData.append("file", file);
 
-  return api.post("/files/upload", formData, {
+  return api.post("/api/files/upload", formData, {
     headers: {
       "Content-Type": "multipart/form-data",
     },
@@ -99,7 +100,7 @@ export const uploadFile = async (file, onProgress) => {
 
 // File download helper
 export const downloadFile = async (fileId, filename) => {
-  const response = await api.get(`/files/${fileId}/download`, {
+  const response = await api.get(`/api/files/${fileId}/download`, {
     responseType: "blob",
   });
 
@@ -115,72 +116,73 @@ export const downloadFile = async (fileId, filename) => {
 
 // File preview helper
 export const getFilePreviewUrl = (fileId) => {
-  return `${process.env.REACT_APP_API_URL}/files/${fileId}/preview`;
+  return `${process.env.REACT_APP_API_URL ||
+    "http://localhost:5001"}/api/files/${fileId}/preview`;
 };
 
 // Share file helper
 export const shareFile = async (fileId, shareData) => {
-  return api.post(`/files/${fileId}/share`, shareData);
+  return api.post(`/api/files/${fileId}/share`, shareData);
 };
 
 // Create folder helper
 export const createFolder = async (folderData) => {
-  return api.post("/folders", folderData);
+  return api.post("/api/folders", folderData);
 };
 
 // Get folder contents helper
 export const getFolderContents = async (folderId = null) => {
   const params = folderId ? { folderId } : {};
-  return api.get("/folders", { params });
+  return api.get("/api/folders", { params });
 };
 
 // Search files helper
 export const searchFiles = async (query, filters = {}) => {
-  return api.get("/files/search", {
+  return api.get("/api/files/search", {
     params: { q: query, ...filters },
   });
 };
 
 // Get storage stats helper
 export const getStorageStats = async () => {
-  return api.get("/files/storage-stats");
+  return api.get("/api/files/storage-stats");
 };
 
 // Get shared files helper
 export const getSharedFiles = async () => {
-  return api.get("/shares");
+  return api.get("/api/shares");
 };
 
 // Get trash files helper
 export const getTrashFiles = async () => {
-  return api.get("/files/trash");
+  return api.get("/api/files/trash");
 };
 
 // Restore file from trash helper
 export const restoreFile = async (fileId) => {
-  return api.post(`/files/${fileId}/restore`);
+  return api.post(`/api/files/${fileId}/restore`);
 };
 
 // Permanently delete file helper
 export const permanentlyDeleteFile = async (fileId) => {
-  return api.delete(`/files/${fileId}/permanent`);
+  return api.delete(`/api/files/${fileId}/permanent`);
 };
 
 // Admin helpers
 export const getUsers = async () => {
-  return api.get("/admin/users");
+  return api.get("/api/admin/users");
 };
 
 export const updateUser = async (userId, userData) => {
-  return api.put(`/admin/users/${userId}`, userData);
+  return api.put(`/api/admin/users/${userId}`, userData);
 };
 
 export const deleteUser = async (userId) => {
-  return api.delete(`/admin/users/${userId}`);
+  return api.delete(`/api/admin/users/${userId}`);
 };
 
 export const getSystemStats = async () => {
-  return api.get("/admin/stats");
+  return api.get("/api/admin/stats");
 };
 
 export default api;
