@@ -13,6 +13,9 @@
     "test:unit": "jest --testPathPattern=tests/unit",
     "test:integration": "jest --testPathPattern=tests/integration",
     "test:e2e": "jest --testPathPattern=tests/e2e",
+    "test:file-ops": "jest --testPathPattern=tests/e2e/complete-file-operations.e2e.test.js --testTimeout=300000 --verbose --detectOpenHandles --forceExit",
+    "test:file-ops:coverage": "jest --testPathPattern=tests/e2e/complete-file-operations.e2e.test.js --testTimeout=300000 --verbose --coverage --detectOpenHandles --forceExit",
+    "test:file-ops:watch": "jest --testPathPattern=tests/e2e/complete-file-operations.e2e.test.js --testTimeout=300000 --verbose --watch --detectOpenHandles --forceExit",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
     "test:s3": "node scripts/testS3.js",
     "db:migrate": "sequelize-cli db:migrate",
@@ -99,7 +102,8 @@
     "nodemon": "^3.0.2",
     "prettier": "^3.0.3",
     "sinon": "^17.0.1",
-    "supertest": "^6.3.3",
+    "sqlite3": "^5.1.7",
+    "supertest": "^6.3.4",
     "ts-jest": "^29.1.1"
   },
   "engines": {

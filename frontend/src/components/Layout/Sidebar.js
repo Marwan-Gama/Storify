@@ -39,7 +39,11 @@ const Sidebar = ({
   collapsedDrawerWidth = 70,
 }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  // Remove unused variable: const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  const handleDrawerToggle = () => {
+    onDrawerToggle();
+  };
 
   const menuItems = [
     {
@@ -366,7 +370,7 @@ const Sidebar = ({
       <Drawer
         variant="temporary"
         open={mobileOpen}
-        onClose={onDrawerToggle}
+        onClose={handleDrawerToggle}
         ModalProps={{
           keepMounted: true,
         }}

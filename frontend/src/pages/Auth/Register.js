@@ -44,16 +44,10 @@ const Register = () => {
   };
 
   const validatePassword = (password) => {
-    if (!password) return "Password is required";
-    if (password.length < 8) return "Password must be at least 8 characters";
-    if (password.length > 128) return "Password is too long";
-    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      return "Password must contain at least one lowercase letter, one uppercase letter, and one number";
-    }
-    if (!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(password)) {
-      return "Password contains invalid characters";
-    }
-    return "";
+    // Fix unnecessary escape characters
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    return passwordRegex.test(password);
   };
 
   const validateConfirmPassword = (confirmPassword) => {

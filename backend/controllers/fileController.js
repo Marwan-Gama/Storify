@@ -260,8 +260,8 @@ class FileController {
         success: true,
         message: "Files uploaded successfully",
         data: {
-          uploaded: uploadedFiles.filter(f => !f.error).length,
-          failed: uploadedFiles.filter(f => f.error).length,
+          uploaded: uploadedFiles.filter((f) => !f.error).length,
+          failed: uploadedFiles.filter((f) => f.error).length,
           files: uploadedFiles,
         },
       });
@@ -707,6 +707,192 @@ class FileController {
       res.status(500).json({
         success: false,
         message: "Failed to restore file",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      });
+    }
+  }
+
+  // Move file
+  async moveFile(req, res) {
+    try {
+      const { id } = req.params;
+      const { folderId } = req.body;
+      const userId = req.user.id;
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation errors",
+          errors: errors.array(),
+        });
+      }
+
+      // Find the file
+      const file = await File.findOne({
+        where: { id, userId, isDeleted: false },
+      });
+
+      if (!file) {
+        return res.status(404).json({
+          success: false,
+          message: "File not found",
+        });
+      }
+
+      // Validate folder ownership if folderId is provided
+      if (folderId) {
+        const folder = await Folder.findOne({
+          where: { id: folderId, userId, isDeleted: false },
+        });
+        if (!folder) {
+          return res.status(404).json({
+            success: false,
+            message: "Folder not found or access denied",
+          });
+        }
+      }
+
+      // Generate new S3 key for the moved file
+      const newS3Key = folderId
+        ? `users/${userId}/folders/${folderId}/${file.name}`
+        : `users/${userId}/files/${file.name}`;
+
+      // Move file in S3
+      await s3Service.copyFile(file.s3Key, newS3Key);
+      await s3Service.deleteFile(file.s3Key);
+
+      // Update file record
+      await file.update({
+        folderId: folderId || null,
+        s3Key: newS3Key,
+        s3Url: newS3Key,
+        metadata: {
+          ...file.metadata,
+          movedAt: new Date().toISOString(),
+        },
+      });
+
+      res.json({
+        success: true,
+        message: "File moved successfully",
+        data: {
+          id: file.id,
+          name: file.name,
+          folderId: file.folderId,
+          updatedAt: file.updatedAt,
+        },
+      });
+    } catch (error) {
+      console.error("Move file error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to move file",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      });
+    }
+  }
+
+  // Copy file
+  async copyFile(req, res) {
+    try {
+      const { id } = req.params;
+      const { name, folderId } = req.body;
+      const userId = req.user.id;
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation errors",
+          errors: errors.array(),
+        });
+      }
+
+      // Find the original file
+      const originalFile = await File.findOne({
+        where: { id, userId, isDeleted: false },
+      });
+
+      if (!originalFile) {
+        return res.status(404).json({
+          success: false,
+          message: "File not found",
+        });
+      }
+
+      // Validate folder ownership if folderId is provided
+      if (folderId) {
+        const folder = await Folder.findOne({
+          where: { id: folderId, userId, isDeleted: false },
+        });
+        if (!folder) {
+          return res.status(404).json({
+            success: false,
+            message: "Folder not found or access denied",
+          });
+        }
+      }
+
+      // Generate new S3 key for the copy
+      const newFileName = name || `${originalFile.name}_copy`;
+      const newS3Key = folderId
+        ? `users/${userId}/folders/${folderId}/${newFileName}`
+        : `users/${userId}/files/${newFileName}`;
+
+      // Copy file in S3
+      await s3Service.copyFile(originalFile.s3Key, newS3Key);
+
+      // Create new file record
+      const newFileData = {
+        name: newFileName,
+        originalName: originalFile.originalName,
+        description: originalFile.description,
+        mimeType: originalFile.mimeType,
+        size: originalFile.size,
+        extension: originalFile.extension,
+        s3Key: newS3Key,
+        s3Url: newS3Key, // You might want to generate a new URL
+        thumbnailUrl: originalFile.thumbnailUrl, // Copy thumbnail if exists
+        folderId: folderId || null,
+        userId,
+        isDeleted: false,
+        isPublic: false, // Copy is private by default
+        publicLink: null,
+        downloadCount: 0,
+        tags: originalFile.tags,
+        metadata: {
+          ...originalFile.metadata,
+          copiedFrom: originalFile.id,
+          copiedAt: new Date().toISOString(),
+        },
+      };
+
+      const newFile = await File.create(newFileData);
+
+      res.status(201).json({
+        success: true,
+        message: "File copied successfully",
+        data: {
+          id: newFile.id,
+          name: newFile.name,
+          size: newFile.size,
+          mimeType: newFile.mimeType,
+          folderId: newFile.folderId,
+          createdAt: newFile.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error("Copy file error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to copy file",
         error:
           process.env.NODE_ENV === "development"
             ? error.message

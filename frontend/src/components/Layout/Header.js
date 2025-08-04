@@ -13,7 +13,6 @@ import {
   Tooltip,
   Divider,
   ListItemIcon,
-  ListItemText,
 } from "@mui/material";
 import {
   Menu as MenuIcon,

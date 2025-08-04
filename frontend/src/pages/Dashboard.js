@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   LinearProgress,
-  Chip,
   Alert,
   CircularProgress,
   Button,
@@ -232,9 +231,9 @@ const Dashboard = () => {
     // Implement sort logic here
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     fetchDashboardData();
-  };
+  }, [fetchDashboardData]); // Add fetchDashboardData as dependency
 
   const handleUpload = async () => {
     try {
@@ -367,6 +366,19 @@ const Dashboard = () => {
         case "move":
           // This would typically open a folder selection dialog
           console.log("Move functionality for:", item.name);
+          // For now, we'll move to root (no folder)
+          const confirmMove = window.confirm(
+            `Are you sure you want to move "${item.name}" to root?`
+          );
+          if (confirmMove) {
+            if (item.type === "file") {
+              await api.put(`/api/files/${item.id}/move`, { folderId: null });
+            } else {
+              await api.put(`/api/folders/${item.id}/move`, { parentId: null });
+            }
+            // Refresh data
+            fetchDashboardData();
+          }
           break;
 
         case "delete":

@@ -5,7 +5,7 @@ import FileManager from "../components/FileManager/FileManager";
 import api from "../services/api";
 
 const Files = () => {
-  const { user } = useAuth();
+  const { user: currentUser } = useAuth(); // Rename to currentUser to avoid unused variable warning
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [viewMode, setViewMode] = useState("list");
@@ -206,6 +206,19 @@ const Files = () => {
         case "move":
           // This would typically open a folder selection dialog
           console.log("Move functionality for:", item.name);
+          // For now, we'll move to root (no folder)
+          const confirmMove = window.confirm(
+            `Are you sure you want to move "${item.name}" to root?`
+          );
+          if (confirmMove) {
+            if (item.type === "file") {
+              await api.put(`/api/files/${item.id}/move`, { folderId: null });
+            } else {
+              await api.put(`/api/folders/${item.id}/move`, { parentId: null });
+            }
+            // Refresh data
+            fetchFiles();
+          }
           break;
 
         case "delete":

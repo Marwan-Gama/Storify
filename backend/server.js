@@ -8,6 +8,7 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const swaggerJsdoc = require("swagger-jsdoc");
 const swaggerUi = require("swagger-ui-express");
+const path = require("path"); // Added for static file serving
 
 // Import database and models
 const db = require("./models");
@@ -104,6 +105,11 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Cookie parser
 app.use(cookieParser());
 
+// Static file serving for uploads (development only)
+if (process.env.NODE_ENV === "development") {
+  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+}
+
 // Logging middleware
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
@@ -194,18 +200,20 @@ process.on("SIGINT", async () => {
 });
 
 // Handle unhandled promise rejections
-process.on("unhandledRejection", err => {
+process.on("unhandledRejection", (err) => {
   console.error("Unhandled Promise Rejection:", err);
   throw new Error(`Unhandled Promise Rejection: ${err.message}`);
 });
 
 // Handle uncaught exceptions
-process.on("uncaughtException", err => {
+process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
   throw new Error(`Uncaught Exception: ${err.message}`);
 });
 
-// Start the server
-startServer();
+// Start the server only if this is the main module
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;

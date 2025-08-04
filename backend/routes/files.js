@@ -175,18 +175,12 @@ router.post(
   authenticateToken,
   uploadSingle,
   [
-    body("folderId")
-      .optional()
-      .isUUID()
-      .withMessage("Invalid folder ID"),
+    body("folderId").optional().isUUID().withMessage("Invalid folder ID"),
     body("description")
       .optional()
       .isLength({ max: 1000 })
       .withMessage("Description too long"),
-    body("tags")
-      .optional()
-      .isJSON()
-      .withMessage("Invalid tags format"),
+    body("tags").optional().isJSON().withMessage("Invalid tags format"),
     body("isPublic")
       .optional()
       .isIn(["true", "false"])
@@ -238,18 +232,12 @@ router.post(
   authenticateToken,
   uploadMultiple,
   [
-    body("folderId")
-      .optional()
-      .isUUID()
-      .withMessage("Invalid folder ID"),
+    body("folderId").optional().isUUID().withMessage("Invalid folder ID"),
     body("description")
       .optional()
       .isLength({ max: 1000 })
       .withMessage("Description too long"),
-    body("tags")
-      .optional()
-      .isJSON()
-      .withMessage("Invalid tags format"),
+    body("tags").optional().isJSON().withMessage("Invalid tags format"),
     body("isPublic")
       .optional()
       .isIn(["true", "false"])
@@ -287,11 +275,7 @@ router.post(
 router.get(
   "/:id/download",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid file ID")],
   fileController.downloadFile
 );
 
@@ -337,11 +321,7 @@ router.get(
 router.get(
   "/:id/preview",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid file ID")],
   fileController.getFilePreview
 );
 
@@ -420,11 +400,7 @@ router.get("/stats", authenticateToken, fileController.getFileStats);
 router.get(
   "/:id",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid file ID")],
   fileController.getFile
 );
 
@@ -477,9 +453,7 @@ router.put(
   "/:id",
   authenticateToken,
   [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
+    param("id").isUUID().withMessage("Invalid file ID"),
     body("name")
       .optional()
       .isLength({ min: 1, max: 255 })
@@ -488,18 +462,12 @@ router.put(
       .optional()
       .isLength({ max: 1000 })
       .withMessage("Description too long"),
-    body("tags")
-      .optional()
-      .isJSON()
-      .withMessage("Invalid tags format"),
+    body("tags").optional().isJSON().withMessage("Invalid tags format"),
     body("isPublic")
       .optional()
       .isIn(["true", "false"])
       .withMessage("Invalid public flag"),
-    body("folderId")
-      .optional()
-      .isUUID()
-      .withMessage("Invalid folder ID"),
+    body("folderId").optional().isUUID().withMessage("Invalid folder ID"),
   ],
   fileController.updateFile
 );
@@ -528,11 +496,7 @@ router.put(
 router.delete(
   "/:id",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid file ID")],
   fileController.deleteFile
 );
 
@@ -560,11 +524,7 @@ router.delete(
 router.delete(
   "/:id/permanent",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid file ID")],
   fileController.permanentDeleteFile
 );
 
@@ -592,12 +552,103 @@ router.delete(
 router.post(
   "/:id/restore",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid file ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid file ID")],
   fileController.restoreFile
+);
+
+/**
+ * @swagger
+ * /api/files/{id}/copy:
+ *   post:
+ *     summary: Copy a file
+ *     tags: [Files]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: New name for the copied file
+ *               folderId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the folder to copy the file to
+ *     responses:
+ *       201:
+ *         description: File copied successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: File not found
+ */
+router.post(
+  "/:id/copy",
+  authenticateToken,
+  [
+    param("id").isUUID().withMessage("Invalid file ID"),
+    body("name")
+      .optional()
+      .isLength({ min: 1, max: 255 })
+      .withMessage("Name must be between 1 and 255 characters"),
+    body("folderId").optional().isUUID().withMessage("Invalid folder ID"),
+  ],
+  fileController.copyFile
+);
+
+/**
+ * @swagger
+ * /api/files/{id}/move:
+ *   put:
+ *     summary: Move a file to a different folder
+ *     tags: [Files]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               folderId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the folder to move the file to (null for root)
+ *     responses:
+ *       200:
+ *         description: File moved successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: File not found
+ */
+router.put(
+  "/:id/move",
+  authenticateToken,
+  [
+    param("id").isUUID().withMessage("Invalid file ID"),
+    body("folderId").optional().isUUID().withMessage("Invalid folder ID"),
+  ],
+  fileController.moveFile
 );
 
 /**
@@ -620,11 +671,7 @@ router.post(
  */
 router.get(
   "/public/:publicLink",
-  [
-    param("publicLink")
-      .isUUID()
-      .withMessage("Invalid public link"),
-  ],
+  [param("publicLink").isUUID().withMessage("Invalid public link")],
   fileController.getPublicFile
 );
 

@@ -4,20 +4,28 @@ const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs").promises;
 
-// Configure AWS S3 with retry logic
-const s3 = new AWS.S3({
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: process.env.AWS_REGION,
-  maxRetries: 3,
-  retryDelayOptions: {
-    base: 300,
-  },
-  httpOptions: {
-    timeout: 300000, // 5 minutes
-    connectTimeout: 60000, // 1 minute
-  },
-});
+// Check if AWS credentials are configured
+const hasAwsCredentials =
+  process.env.AWS_ACCESS_KEY_ID &&
+  process.env.AWS_SECRET_ACCESS_KEY &&
+  process.env.AWS_S3_BUCKET;
+
+// Configure AWS S3 with retry logic (only if credentials are available)
+const s3 = hasAwsCredentials
+  ? new AWS.S3({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_REGION,
+      maxRetries: 3,
+      retryDelayOptions: {
+        base: 300,
+      },
+      httpOptions: {
+        timeout: 300000, // 5 minutes
+        connectTimeout: 60000, // 1 minute
+      },
+    })
+  : null;
 
 const BUCKET_NAME = process.env.AWS_S3_BUCKET;
 
@@ -35,6 +43,11 @@ class S3Service {
   // Upload file to S3 with enhanced error handling
   async uploadFile(file, folder = "uploads", options = {}) {
     try {
+      // If AWS credentials are not configured, use local storage
+      if (!hasAwsCredentials) {
+        return this.uploadFileLocal(file, folder, options);
+      }
+
       const key = `${folder}/${uuidv4()}_${file.originalname}`;
       const {
         contentType = file.mimetype,
@@ -77,10 +90,47 @@ class S3Service {
     }
   }
 
+  // Local storage fallback for development
+  async uploadFileLocal(file, folder = "uploads") {
+    try {
+      // Create uploads directory if it doesn't exist
+      const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+      const folderPath = path.join(uploadsDir, folder);
+
+      await fs.mkdir(folderPath, { recursive: true });
+
+      const filename = `${uuidv4()}_${file.originalname}`;
+      const filePath = path.join(folderPath, filename);
+
+      // Write file to local storage
+      await fs.writeFile(filePath, file.buffer);
+
+      return {
+        key: `${folder}/${filename}`,
+        url: `/uploads/${folder}/${filename}`,
+        bucket: "local",
+        etag: "local-etag",
+        versionId: null,
+        localPath: filePath,
+      };
+    } catch (error) {
+      throw new S3Error(
+        `Local upload failed: ${error.message}`,
+        "LOCAL_UPLOAD_ERROR",
+        500
+      );
+    }
+  }
+
   // Download file from S3 with streaming support
   async downloadFile(key, options = {}) {
     try {
-      const { responseType = "buffer", range } = options;
+      // If AWS credentials are not configured, use local storage
+      if (!hasAwsCredentials) {
+        return this.downloadFileLocal(key);
+      }
+
+      const { range } = options;
 
       const params = {
         Bucket: BUCKET_NAME,
@@ -115,6 +165,67 @@ class S3Service {
     }
   }
 
+  // Local download fallback for development
+  async downloadFileLocal(key) {
+    try {
+      const uploadsDir = path.join(__dirname, "..", "..", "uploads");
+      const filePath = path.join(uploadsDir, key);
+
+      // Check if file exists
+      try {
+        await fs.access(filePath);
+      } catch (error) {
+        throw new S3Error("File not found", "FILE_NOT_FOUND", 404);
+      }
+
+      const stats = await fs.stat(filePath);
+      const buffer = await fs.readFile(filePath);
+
+      return {
+        body: buffer,
+        contentType: this.getMimeType(key),
+        contentLength: stats.size,
+        metadata: {
+          originalName: path.basename(key),
+          uploadedAt: stats.birthtime.toISOString(),
+          fileSize: stats.size.toString(),
+        },
+        etag: "local-etag",
+        lastModified: stats.mtime,
+        expires: null,
+        cacheControl: "public, max-age=31536000",
+      };
+    } catch (error) {
+      if (error instanceof S3Error) {
+        throw error;
+      }
+      throw new S3Error(
+        `Local download failed: ${error.message}`,
+        "LOCAL_DOWNLOAD_ERROR",
+        500
+      );
+    }
+  }
+
+  // Helper method to get MIME type from file extension
+  getMimeType(filename) {
+    const ext = path.extname(filename).toLowerCase();
+    const mimeTypes = {
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".pdf": "application/pdf",
+      ".txt": "text/plain",
+      ".doc": "application/msword",
+      ".docx":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ".mp4": "video/mp4",
+      ".mp3": "audio/mpeg",
+    };
+    return mimeTypes[ext] || "application/octet-stream";
+  }
+
   // Generate presigned URL for file access with enhanced options
   async generatePresignedUrl(
     key,
@@ -123,6 +234,16 @@ class S3Service {
     options = {}
   ) {
     try {
+      // If AWS credentials are not configured, use local storage
+      if (!hasAwsCredentials) {
+        return this.generatePresignedUrlLocal(
+          key,
+          operation,
+          expiresIn,
+          options
+        );
+      }
+
       const {
         contentType,
         responseContentDisposition,
@@ -150,6 +271,20 @@ class S3Service {
         `Failed to generate presigned URL: ${error.message}`,
         error.code || "PRESIGNED_URL_ERROR",
         error.statusCode || 500
+      );
+    }
+  }
+
+  // Local presigned URL generation for development
+  generatePresignedUrlLocal(key) {
+    try {
+      // For local development, return a direct file URL
+      return `http://localhost:5000/uploads/${key}`;
+    } catch (error) {
+      throw new S3Error(
+        `Failed to generate local presigned URL: ${error.message}`,
+        "LOCAL_PRESIGNED_URL_ERROR",
+        500
       );
     }
   }
@@ -303,7 +438,7 @@ class S3Service {
       const result = await s3.listObjectsV2(params).promise();
 
       return {
-        files: result.Contents.map(item => ({
+        files: result.Contents.map((item) => ({
           key: item.Key,
           size: item.Size,
           lastModified: item.LastModified,
@@ -311,7 +446,7 @@ class S3Service {
           storageClass: item.StorageClass,
           owner: item.Owner,
         })),
-        folders: result.CommonPrefixes.map(prefix => ({
+        folders: result.CommonPrefixes.map((prefix) => ({
           key: prefix.Prefix,
         })),
         isTruncated: result.IsTruncated,
@@ -367,7 +502,7 @@ class S3Service {
           const deleteParams = {
             Bucket: BUCKET_NAME,
             Delete: {
-              Objects: batch.map(file => ({ Key: file.key })),
+              Objects: batch.map((file) => ({ Key: file.key })),
             },
           };
 
@@ -515,7 +650,7 @@ class S3Service {
       const upload = s3.upload(params);
 
       if (onProgress) {
-        upload.on("httpUploadProgress", progress => {
+        upload.on("httpUploadProgress", (progress) => {
           const percentage = Math.round(
             (progress.loaded / progress.total) * 100
           );

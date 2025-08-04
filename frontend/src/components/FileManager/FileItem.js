@@ -94,13 +94,6 @@ const FileItem = ({
     return <CloudIcon sx={{ color: "text.secondary" }} />;
   };
 
-  const getFileTypeColor = (item) => {
-    if (item.type === "folder") return "primary";
-    if (item.shared) return "success";
-    if (item.isPublic) return "warning";
-    return "default";
-  };
-
   const isListView = viewMode === "list";
 
   if (isListView) {

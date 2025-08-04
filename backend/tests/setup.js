@@ -31,7 +31,7 @@ afterAll(async () => {
 global.testUtils = {
   // Generate test user data
   generateTestUser: (overrides = {}) => ({
-    username: `testuser_${Date.now()}`,
+    name: `Test User ${Date.now()}`,
     email: `test_${Date.now()}@example.com`,
     password: "TestPassword123!",
     tier: "free",
@@ -62,7 +62,7 @@ global.testUtils = {
   generateTestToken: (user) => {
     const jwt = require("jsonwebtoken");
     return jwt.sign(
-      { id: user.id, email: user.email },
+      { userId: user.id, email: user.email },
       process.env.JWT_SECRET || "test-secret",
       { expiresIn: "1h" }
     );

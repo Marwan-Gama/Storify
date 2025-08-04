@@ -1,26 +1,27 @@
 import React from "react";
 import {
   Box,
+  Button,
   TextField,
   InputAdornment,
   IconButton,
   Tooltip,
-  Button,
+  Menu,
+  MenuItem,
+  Typography,
   Chip,
+  Grid,
   FormControl,
   InputLabel,
   Select,
-  MenuItem,
-  Divider,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 import {
   Search as SearchIcon,
-  ViewList as ListIcon,
-  ViewModule as GridIcon,
-  FilterList as FilterIcon,
-  Sort as SortIcon,
+  Add as AddIcon,
+  ViewList as ViewListIcon,
+  ViewModule as ViewModuleIcon,
   Refresh as RefreshIcon,
   CloudUpload as UploadIcon,
   CreateNewFolder as FolderIcon,
@@ -149,7 +150,7 @@ const FileToolbar = ({
                 },
               }}
             >
-              <ListIcon />
+              <ViewListIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Grid view">
@@ -165,13 +166,11 @@ const FileToolbar = ({
                 },
               }}
             >
-              <GridIcon />
+              <ViewModuleIcon />
             </IconButton>
           </Tooltip>
         </Box>
       )}
-
-      <Divider orientation="vertical" flexItem />
 
       {/* Actions */}
       {showActions && (

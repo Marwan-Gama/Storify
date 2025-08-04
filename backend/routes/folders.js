@@ -200,10 +200,7 @@ router.post(
       .optional()
       .isUUID()
       .withMessage("Invalid parent folder ID"),
-    body("color")
-      .optional()
-      .isHexColor()
-      .withMessage("Invalid color format"),
+    body("color").optional().isHexColor().withMessage("Invalid color format"),
     body("isPublic")
       .optional()
       .isIn(["true", "false"])
@@ -285,11 +282,7 @@ router.get("/stats", authenticateToken, folderController.getFolderStats);
 router.get(
   "/:id",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid folder ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid folder ID")],
   folderController.getFolder
 );
 
@@ -342,9 +335,7 @@ router.put(
   "/:id",
   authenticateToken,
   [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid folder ID"),
+    param("id").isUUID().withMessage("Invalid folder ID"),
     body("name")
       .optional()
       .isLength({ min: 1, max: 255 })
@@ -358,10 +349,7 @@ router.put(
       .optional()
       .isUUID()
       .withMessage("Invalid parent folder ID"),
-    body("color")
-      .optional()
-      .isHexColor()
-      .withMessage("Invalid color format"),
+    body("color").optional().isHexColor().withMessage("Invalid color format"),
     body("isPublic")
       .optional()
       .isIn(["true", "false"])
@@ -396,11 +384,7 @@ router.put(
 router.delete(
   "/:id",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid folder ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid folder ID")],
   folderController.deleteFolder
 );
 
@@ -428,11 +412,7 @@ router.delete(
 router.delete(
   "/:id/permanent",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid folder ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid folder ID")],
   folderController.permanentDeleteFolder
 );
 
@@ -460,12 +440,109 @@ router.delete(
 router.post(
   "/:id/restore",
   authenticateToken,
-  [
-    param("id")
-      .isUUID()
-      .withMessage("Invalid folder ID"),
-  ],
+  [param("id").isUUID().withMessage("Invalid folder ID")],
   folderController.restoreFolder
+);
+
+/**
+ * @swagger
+ * /api/folders/{id}/copy:
+ *   post:
+ *     summary: Copy a folder
+ *     tags: [Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: New name for the copied folder
+ *               parentId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the parent folder to copy the folder to
+ *     responses:
+ *       201:
+ *         description: Folder copied successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Folder not found
+ */
+router.post(
+  "/:id/copy",
+  authenticateToken,
+  [
+    param("id").isUUID().withMessage("Invalid folder ID"),
+    body("name")
+      .optional()
+      .isLength({ min: 1, max: 255 })
+      .withMessage("Name must be between 1 and 255 characters"),
+    body("parentId")
+      .optional()
+      .isUUID()
+      .withMessage("Invalid parent folder ID"),
+  ],
+  folderController.copyFolder
+);
+
+/**
+ * @swagger
+ * /api/folders/{id}/move:
+ *   put:
+ *     summary: Move a folder to a different parent
+ *     tags: [Folders]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               parentId:
+ *                 type: string
+ *                 format: uuid
+ *                 description: ID of the parent folder to move the folder to (null for root)
+ *     responses:
+ *       200:
+ *         description: Folder moved successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Folder not found
+ */
+router.put(
+  "/:id/move",
+  authenticateToken,
+  [
+    param("id").isUUID().withMessage("Invalid folder ID"),
+    body("parentId")
+      .optional()
+      .isUUID()
+      .withMessage("Invalid parent folder ID"),
+  ],
+  folderController.moveFolder
 );
 
 /**
@@ -488,11 +565,7 @@ router.post(
  */
 router.get(
   "/public/:publicLink",
-  [
-    param("publicLink")
-      .isUUID()
-      .withMessage("Invalid public link"),
-  ],
+  [param("publicLink").isUUID().withMessage("Invalid public link")],
   folderController.getPublicFolder
 );
 

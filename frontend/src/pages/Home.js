@@ -19,10 +19,6 @@ import {
   Share as ShareIcon,
   Speed as SpeedIcon,
   Cloud as CloudIcon,
-  Storage as StorageIcon,
-  Lock as LockIcon,
-  Devices as DevicesIcon,
-  TrendingUp as TrendingUpIcon,
   CheckCircle as CheckCircleIcon,
 } from "@mui/icons-material";
 

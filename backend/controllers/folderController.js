@@ -592,6 +592,216 @@ class FolderController {
     }
   }
 
+  // Move folder
+  async moveFolder(req, res) {
+    try {
+      const { id } = req.params;
+      const { parentId } = req.body;
+      const userId = req.user.id;
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation errors",
+          errors: errors.array(),
+        });
+      }
+
+      // Find the folder
+      const folder = await Folder.findOne({
+        where: { id, userId, isDeleted: false },
+      });
+
+      if (!folder) {
+        return res.status(404).json({
+          success: false,
+          message: "Folder not found",
+        });
+      }
+
+      // Validate parent folder ownership if parentId is provided
+      if (parentId) {
+        const parentFolder = await Folder.findOne({
+          where: { id: parentId, userId, isDeleted: false },
+        });
+        if (!parentFolder) {
+          return res.status(404).json({
+            success: false,
+            message: "Parent folder not found or access denied",
+          });
+        }
+      }
+
+      // Check for circular reference
+      if (
+        parentId &&
+        (await this.checkCircularReference(id, parentId, userId))
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot move folder: circular reference detected",
+        });
+      }
+
+      // Build new path
+      const newPath = parentId
+        ? await this.buildFolderPath(parentId, userId)
+        : `users/${userId}/folders`;
+
+      const newS3Key = `${newPath}/${folder.name}`;
+
+      // Move folder in S3
+      await s3Service.copyFile(folder.s3Key, newS3Key);
+      await s3Service.deleteFile(folder.s3Key);
+
+      // Update folder record
+      await folder.update({
+        parentId: parentId || null,
+        path: newS3Key,
+        s3Key: newS3Key,
+        metadata: {
+          ...folder.metadata,
+          movedAt: new Date().toISOString(),
+        },
+      });
+
+      res.json({
+        success: true,
+        message: "Folder moved successfully",
+        data: {
+          id: folder.id,
+          name: folder.name,
+          parentId: folder.parentId,
+          updatedAt: folder.updatedAt,
+        },
+      });
+    } catch (error) {
+      console.error("Move folder error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to move folder",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      });
+    }
+  }
+
+  // Copy folder
+  async copyFolder(req, res) {
+    try {
+      const { id } = req.params;
+      const { name, parentId } = req.body;
+      const userId = req.user.id;
+
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation errors",
+          errors: errors.array(),
+        });
+      }
+
+      // Find the original folder
+      const originalFolder = await Folder.findOne({
+        where: { id, userId, isDeleted: false },
+      });
+
+      if (!originalFolder) {
+        return res.status(404).json({
+          success: false,
+          message: "Folder not found",
+        });
+      }
+
+      // Validate parent folder ownership if parentId is provided
+      if (parentId) {
+        const parentFolder = await Folder.findOne({
+          where: { id: parentId, userId, isDeleted: false },
+        });
+        if (!parentFolder) {
+          return res.status(404).json({
+            success: false,
+            message: "Parent folder not found or access denied",
+          });
+        }
+      }
+
+      // Check if folder with same name exists in the same parent
+      const newFolderName = name || `${originalFolder.name}_copy`;
+      const existingFolder = await Folder.findOne({
+        where: {
+          name: newFolderName,
+          userId,
+          parentId: parentId || null,
+          isDeleted: false,
+        },
+      });
+
+      if (existingFolder) {
+        return res.status(400).json({
+          success: false,
+          message: "A folder with this name already exists in this location",
+        });
+      }
+
+      // Create folder in S3
+      const folderPath = parentId
+        ? await this.buildFolderPath(parentId, userId)
+        : `users/${userId}/folders`;
+
+      const s3FolderKey = `${folderPath}/${newFolderName}`;
+      await s3Service.createFolder(s3FolderKey);
+
+      // Create folder record in database
+      const folderData = {
+        name: newFolderName,
+        description: originalFolder.description,
+        path: s3FolderKey,
+        parentId: parentId || null,
+        userId,
+        color: originalFolder.color,
+        isPublic: false, // Copy is private by default
+        publicLink: null,
+        s3Key: s3FolderKey,
+        metadata: {
+          ...originalFolder.metadata,
+          copiedFrom: originalFolder.id,
+          copiedAt: new Date().toISOString(),
+        },
+      };
+
+      const newFolder = await Folder.create(folderData);
+
+      res.status(201).json({
+        success: true,
+        message: "Folder copied successfully",
+        data: {
+          id: newFolder.id,
+          name: newFolder.name,
+          description: newFolder.description,
+          parentId: newFolder.parentId,
+          color: newFolder.color,
+          isPublic: newFolder.isPublic,
+          createdAt: newFolder.createdAt,
+        },
+      });
+    } catch (error) {
+      console.error("Copy folder error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to copy folder",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Internal server error",
+      });
+    }
+  }
+
   // Get public folder by link
   async getPublicFolder(req, res) {
     try {
