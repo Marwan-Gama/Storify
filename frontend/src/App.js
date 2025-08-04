@@ -238,15 +238,11 @@ function App() {
 
   return (
     <Routes>
-      {/* Root route */}
+      {/* Root route - Show Home page for guests, Dashboard for authenticated users */}
       <Route
         path="/"
         element={
-          isAuthenticated ? (
-            <Navigate to="/dashboard" replace />
-          ) : (
-            <Navigate to="/auth/login" replace />
-          )
+          isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />
         }
       />
 
@@ -305,7 +301,7 @@ function App() {
           isAuthenticated ? (
             <Navigate to="/dashboard" replace />
           ) : (
-            <Navigate to="/auth/login" replace />
+            <Navigate to="/" replace />
           )
         }
       />

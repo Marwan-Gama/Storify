@@ -1,145 +1,13 @@
 import axios from "axios";
 import toast from "react-hot-toast";
 
-// Request deduplication cache
-const pendingRequests = new Map();
-
-// Request queue for rate limiting
-const requestQueue = [];
-let isProcessingQueue = false;
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests
-
-// Create a unique key for each request
-const createRequestKey = (config) => {
-  return `${config.method?.toUpperCase() || "GET"}:${
-    config.url
-  }:${JSON.stringify(config.params || {})}`;
-};
-
-// Process the request queue
-const processQueue = async () => {
-  if (isProcessingQueue || requestQueue.length === 0) {
-    return;
-  }
-
-  isProcessingQueue = true;
-
-  while (requestQueue.length > 0) {
-    const now = Date.now();
-    const timeSinceLastRequest = now - lastRequestTime;
-
-    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-      const delay = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-      console.log(`Rate limiting: waiting ${delay}ms before next request`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-    }
-
-    const { config, resolve, reject } = requestQueue.shift();
-    lastRequestTime = Date.now();
-
-    try {
-      const response = await axios(config);
-      resolve(response);
-    } catch (error) {
-      reject(error);
-    }
-  }
-
-  isProcessingQueue = false;
-};
-
-// Request interceptor for deduplication and queuing
-const requestInterceptor = (config) => {
-  const requestKey = createRequestKey(config);
-
-  // Check if there's already a pending request with the same key
-  if (pendingRequests.has(requestKey)) {
-    console.log(`Request deduplicated: ${requestKey}`);
-    return Promise.reject(new axios.Cancel("Request deduplicated"));
-  }
-
-  // Create a new promise for this request
-  const requestPromise = new Promise((resolve, reject) => {
-    pendingRequests.set(requestKey, { resolve, reject });
-  });
-
-  // Store the promise in the config for later use
-  config.requestPromise = requestPromise;
-  config.requestKey = requestKey;
-
-  // Add to queue for rate limiting
-  return new Promise((resolve, reject) => {
-    requestQueue.push({ config, resolve, reject });
-    processQueue();
-  });
-};
-
-// Response interceptor for cleanup
-const responseInterceptor = (response) => {
-  const requestKey = response.config.requestKey;
-  if (requestKey && pendingRequests.has(requestKey)) {
-    const { resolve } = pendingRequests.get(requestKey);
-    resolve(response);
-    pendingRequests.delete(requestKey);
-  }
-  return response;
-};
-
-// Error interceptor for cleanup and retry logic
-const errorInterceptor = async (error) => {
-  const requestKey = error.config?.requestKey;
-
-  // Clean up pending request
-  if (requestKey && pendingRequests.has(requestKey)) {
-    const { reject } = pendingRequests.get(requestKey);
-    reject(error);
-    pendingRequests.delete(requestKey);
-  }
-
-  // Handle 429 errors with longer delays
-  if (error.response?.status === 429) {
-    const retryCount = error.config?.retryCount || 0;
-    const maxRetries = 2; // Reduced retries
-
-    if (retryCount < maxRetries) {
-      // Longer exponential backoff: 5s, 10s
-      const delay = Math.pow(2, retryCount) * 5000;
-
-      console.log(
-        `Rate limited (429). Retrying in ${delay}ms... (attempt ${retryCount +
-          1}/${maxRetries})`
-      );
-
-      await new Promise((resolve) => setTimeout(resolve, delay));
-
-      // Retry the request
-      const retryConfig = {
-        ...error.config,
-        retryCount: retryCount + 1,
-      };
-
-      return axios(retryConfig);
-    } else {
-      console.log("Max retries reached for 429 error");
-      toast.error("Too many requests. Please wait a moment and try again.");
-    }
-  }
-
-  return Promise.reject(error);
-};
-
 const api = axios.create({
   baseURL: "http://localhost:5000",
-  timeout: 15000, // Increased timeout
+  timeout: 15000,
   headers: {
     "Content-Type": "application/json",
   },
 });
-
-// Add interceptors
-api.interceptors.request.use(requestInterceptor);
-api.interceptors.response.use(responseInterceptor, errorInterceptor);
 
 // Add auth token to requests if available
 api.interceptors.request.use(
@@ -229,8 +97,9 @@ export const downloadFile = async (fileId, filename) => {
 
 // File preview helper
 export const getFilePreviewUrl = (fileId) => {
-  return `${process.env.REACT_APP_API_URL ||
-    "http://localhost:5001"}/api/files/${fileId}/preview`;
+  return `${
+    process.env.REACT_APP_API_URL || "http://localhost:5001"
+  }/api/files/${fileId}/preview`;
 };
 
 // Share file helper
